@@ -81,7 +81,7 @@ QTabBar::tab:!selected {
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>5</number>
    </property>
    <property name="elideMode">
     <enum>Qt::ElideNone</enum>
@@ -145,6 +145,9 @@ font-size: 16px;
      <property name="styleSheet">
       <string notr="true"/>
      </property>
+     <property name="editable">
+      <bool>true</bool>
+     </property>
     </widget>
     <widget class="QTableWidget" name="tableWidget">
      <property name="geometry">
@@ -170,16 +173,6 @@ font-size: 16px;
     <attribute name="title">
      <string>Расписание занятий</string>
     </attribute>
-    <widget class="QListView" name="listView">
-     <property name="geometry">
-      <rect>
-       <x>20</x>
-       <y>20</y>
-       <width>731</width>
-       <height>471</height>
-      </rect>
-     </property>
-    </widget>
     <widget class="QComboBox" name="comboBox_2">
      <property name="geometry">
       <rect>
@@ -188,6 +181,9 @@ font-size: 16px;
        <width>131</width>
        <height>22</height>
       </rect>
+     </property>
+     <property name="editable">
+      <bool>true</bool>
      </property>
     </widget>
     <widget class="QLabel" name="label_2">
@@ -228,7 +224,7 @@ font-size: 16px;
 }
 
 #pushButton_2:hover {
-background-color: #9db1cc
+background-color: #71bc78
 }</string>
      </property>
      <property name="text">
@@ -254,7 +250,7 @@ font-size: 16px;
 }
 
 #pushButton_3:hover {
-background-color: #9db1cc
+background-color: #eedc82
 }</string>
      </property>
      <property name="text">
@@ -280,21 +276,179 @@ font-size: 16px;
 }
 
 #pushButton_4:hover {
-background-color: #9db1cc
+background-color: #cf7373
 }</string>
      </property>
      <property name="text">
       <string>Удалить</string>
      </property>
     </widget>
-    <widget class="QTextBrowser" name="textBrowser">
+    <widget class="QCalendarWidget" name="calendarWidget">
      <property name="geometry">
       <rect>
        <x>30</x>
-       <y>30</y>
-       <width>711</width>
-       <height>71</height>
+       <y>10</y>
+       <width>701</width>
+       <height>471</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <kerning>true</kerning>
+      </font>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="acceptDrops">
+      <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string/>
+     </property>
+     <property name="statusTip">
+      <string/>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#calendarWidget QWidget {
+	alternate-background-color: #b0c4de;
+}
+
+#qt_calendar_navigationbar {
+	background-color: #fff;
+	border: 2px solid #b0c4de;
+	border-bottom: 0px;
+	border-top-left-radius: 5px;
+	border-top-right-radius: 5px;
+}
+
+#qt_calendar_prevmonth,
+#qt_calendar_nextmonth {
+	border: none;
+
+	min-width: 13px;
+	max-width: 13px;
+	min-height: 13px;
+	max-height: 13px;
+
+	border-radius: 5px;
+	background-color: transparent;
+	padding: 5px;
+}
+
+#qt_calendar_prevmonth:hover,
+#qt_calendar_nextmonth:hover {
+	background-color: #b0c4de;
+}
+
+#qt_calendar_prevmonth:pressed,
+#qt_calendar_nextmonth:pressed {
+	background-color: #b0c4de;
+}
+
+#qt_calendar_yearbutton {
+	color:#000;
+	margin: 5px;
+	border-radius: 5px;
+	font-size: 13px;
+	padding: 0 10px;
+}
+
+#qt_calendar_monthbutton {
+	width: 110px;
+	color: #000;
+	font-size: 13px;
+	margin: 5px 0;
+	border-radius: 5px;
+	padding: 0px 2px;
+}
+
+#qt_calendar_yearbutton:hover,
+#qt_calendar_monthbutton:hover {
+	background-color: #b0c4de;
+}
+
+#qt_calendar_yearbutton:pressed,
+#qt_calendar_monthbutton:pressed {
+	background-color: #b0c4de;
+}
+
+#qt_calendar_yearedit {
+	min-width: 53px;
+	color: #000;
+	background: transparent;
+	font-size: 13px;
+}
+
+#qt_calendar_yearedit::down-button:hover,
+#qt_calendar_yearedit::up-button:hover {
+	background-color: #b0c4de;
+}
+
+#calendarWidget QToolButton QMenu {
+	background-color: #b0c4de;
+}
+
+#calendarWidget QToolButton QMenu::itemselected:enabled {
+ 	background-color: #b0c4de;
+}
+
+#calendarWidget QToolButton::menu-indicator {
+	nosubcontrol-origin: margin;
+	subcontrol-position: right center;
+	margin-top: 10px;
+	width: 20px;
+}
+
+#qt_calendar_calendarview {
+	border: 2px solid #b0c4de;
+	border-top: 0px;
+	border-bottom-left-radius: 5px;
+	border-bottom-right-radius: 5px;
+}
+
+#qt_calendar_calendarview::item:hover {
+	border-radius: 5px;
+	background-color: #aaffff;
+}
+
+#qt_calendar_calendarview::item:selected {
+	border-radius: 5px;
+	background-color: #b0c4de;
+}
+
+
+
+
+
+</string>
+     </property>
+     <property name="inputMethodHints">
+      <set>Qt::ImhNone</set>
+     </property>
+     <property name="gridVisible">
+      <bool>false</bool>
+     </property>
+     <property name="selectionMode">
+      <enum>QCalendarWidget::SingleSelection</enum>
+     </property>
+     <property name="horizontalHeaderFormat">
+      <enum>QCalendarWidget::ShortDayNames</enum>
+     </property>
+     <property name="verticalHeaderFormat">
+      <enum>QCalendarWidget::ISOWeekNumbers</enum>
+     </property>
+     <property name="navigationBarVisible">
+      <bool>true</bool>
+     </property>
+     <property name="dateEditEnabled">
+      <bool>true</bool>
+     </property>
+     <property name="dateEditAcceptDelay">
+      <number>1500</number>
      </property>
     </widget>
    </widget>
@@ -330,7 +484,7 @@ font-size: 16px;
 }
 
 #pushButton_5:hover {
-background-color: #9db1cc
+background-color: #71bc78
 }</string>
      </property>
      <property name="text">
@@ -356,7 +510,7 @@ font-size: 16px;
 }
 
 #pushButton_6:hover {
-background-color: #9db1cc
+background-color: #eedc82
 }</string>
      </property>
      <property name="text">
@@ -382,7 +536,7 @@ font-size: 16px;
 }
 
 #pushButton_7:hover {
-background-color: #9db1cc
+background-color: #cf7373
 }</string>
      </property>
      <property name="text">
@@ -476,7 +630,7 @@ font-size: 16px;
 }
 
 #pushButton_8:hover {
-background-color: #9db1cc
+background-color: #71bc78
 }</string>
      </property>
      <property name="text">
@@ -502,7 +656,7 @@ font-size: 16px;
 }
 
 #pushButton_9:hover {
-background-color: #9db1cc
+background-color: #eedc82
 }</string>
      </property>
      <property name="text">
@@ -528,7 +682,7 @@ font-size: 16px;
 }
 
 #pushButton_10:hover {
-background-color: #9db1cc
+background-color: #cf7373
 }</string>
      </property>
      <property name="text">
@@ -616,7 +770,7 @@ font-family: Avenir Next;
 font-size: 16px;
 }
 #pushButton_11:hover {
-background-color: #9db1cc
+background-color: #eedc82
 }</string>
      </property>
      <property name="text">
@@ -652,7 +806,7 @@ font-size: 16px;
 }
 
 #pushButton_12:hover {
-background-color: #9db1cc
+background-color: #cf7373
 }</string>
      </property>
      <property name="text">
@@ -678,7 +832,7 @@ font-size: 16px;
 }
 
 #pushButton_13:hover {
-background-color: #9db1cc
+background-color: #71bc78
 }</string>
      </property>
      <property name="text">
@@ -731,8 +885,17 @@ font-size: 16px;
        <x>880</x>
        <y>70</y>
        <width>161</width>
-       <height>21</height>
+       <height>22</height>
       </rect>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="editable">
+      <bool>true</bool>
      </property>
     </widget>
     <widget class="QLabel" name="label_3">
@@ -864,7 +1027,7 @@ background-color: #9db1cc
      <x>1057</x>
      <y>0</y>
      <width>54</width>
-     <height>36</height>
+     <height>35</height>
     </rect>
    </property>
    <property name="styleSheet">

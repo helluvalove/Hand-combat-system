@@ -53,7 +53,7 @@ background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgba(230, 230, 250, 2
    <property name="font">
     <font>
      <family>Avenir Next</family>
-     <pointsize>-1</pointsize>
+     <pointsize>16</pointsize>
     </font>
    </property>
    <property name="styleSheet">
@@ -91,7 +91,7 @@ background-color: #9db1cc
    <property name="font">
     <font>
      <family>Avenir Next</family>
-     <pointsize>-1</pointsize>
+     <pointsize>16</pointsize>
     </font>
    </property>
    <property name="styleSheet">
@@ -122,7 +122,7 @@ background-color: #9db1cc
    <property name="font">
     <font>
      <family>Avenir Next</family>
-     <pointsize>-1</pointsize>
+     <pointsize>16</pointsize>
     </font>
    </property>
    <property name="styleSheet">
@@ -147,7 +147,7 @@ font-size: 16px;
    <property name="font">
     <font>
      <family>Avenir Next</family>
-     <pointsize>-1</pointsize>
+     <pointsize>16</pointsize>
     </font>
    </property>
    <property name="styleSheet">
@@ -172,6 +172,7 @@ font-size: 16px;
    <property name="styleSheet">
     <string notr="true">#lineEdit {
 border-radius:5%;
+background-color: #e0f0ff;
 }</string>
    </property>
   </widget>
@@ -187,6 +188,7 @@ border-radius:5%;
    <property name="styleSheet">
     <string notr="true">#lineEdit_2 {
 border-radius:5%;
+background-color: #e0f0ff;
 }</string>
    </property>
    <property name="echoMode">
