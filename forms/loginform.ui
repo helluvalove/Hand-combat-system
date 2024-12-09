@@ -165,6 +165,7 @@ font-size: 16px;
    <property name="styleSheet">
     <string notr="true">#lineEdit {
 border-radius:5%;
+background-color: #e2f2fc;
 }</string>
    </property>
   </widget>
@@ -180,6 +181,7 @@ border-radius:5%;
    <property name="styleSheet">
     <string notr="true">#lineEdit_2 {
 border-radius:5%;
+background-color: #e2f2fc;
 }</string>
    </property>
    <property name="echoMode">
