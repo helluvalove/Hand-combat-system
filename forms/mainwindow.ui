@@ -39,7 +39,7 @@ background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgba(230, 230, 250, 2
      <x>-10</x>
      <y>0</y>
      <width>1131</width>
-     <height>501</height>
+     <height>551</height>
     </rect>
    </property>
    <property name="mouseTracking">
@@ -152,7 +152,7 @@ font-size: 16px;
        <x>30</x>
        <y>70</y>
        <width>1071</width>
-       <height>381</height>
+       <height>421</height>
       </rect>
      </property>
     </widget>
@@ -176,7 +176,7 @@ font-size: 16px;
        <x>20</x>
        <y>20</y>
        <width>731</width>
-       <height>441</height>
+       <height>471</height>
       </rect>
      </property>
     </widget>
@@ -225,6 +225,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_2:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -247,6 +251,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_3:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -269,6 +277,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_4:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -315,6 +327,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_5:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -337,6 +353,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_6:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -359,6 +379,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_7:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -371,7 +395,7 @@ font-size: 16px;
        <x>30</x>
        <y>70</y>
        <width>1071</width>
-       <height>381</height>
+       <height>421</height>
       </rect>
      </property>
     </widget>
@@ -449,6 +473,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_8:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -471,6 +499,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_9:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -493,6 +525,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_10:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -505,7 +541,7 @@ font-size: 16px;
        <x>30</x>
        <y>70</y>
        <width>1071</width>
-       <height>381</height>
+       <height>421</height>
       </rect>
      </property>
     </widget>
@@ -578,6 +614,9 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+#pushButton_11:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -590,7 +629,7 @@ font-size: 16px;
        <x>30</x>
        <y>70</y>
        <width>1071</width>
-       <height>381</height>
+       <height>421</height>
       </rect>
      </property>
     </widget>
@@ -610,6 +649,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_12:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -632,6 +675,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_13:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -674,7 +721,7 @@ font-size: 16px;
        <x>30</x>
        <y>30</y>
        <width>711</width>
-       <height>421</height>
+       <height>461</height>
       </rect>
      </property>
     </widget>
@@ -769,6 +816,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton_14:hover {
+background-color: #9db1cc
 }</string>
      </property>
      <property name="text">
@@ -813,7 +864,7 @@ font-size: 16px;
      <x>1057</x>
      <y>0</y>
      <width>54</width>
-     <height>35</height>
+     <height>36</height>
     </rect>
    </property>
    <property name="styleSheet">
@@ -822,6 +873,10 @@ background-color: #cf7373;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton:hover {
+background-color: #bc5d58
 }</string>
    </property>
    <property name="text">

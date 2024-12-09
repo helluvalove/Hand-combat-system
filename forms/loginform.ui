@@ -53,7 +53,7 @@ background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgba(230, 230, 250, 2
    <property name="font">
     <font>
      <family>Avenir Next</family>
-     <pointsize>16</pointsize>
+     <pointsize>-1</pointsize>
     </font>
    </property>
    <property name="styleSheet">
@@ -63,6 +63,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton:hover {
+background-color: #9db1cc
 }</string>
    </property>
    <property name="text">
@@ -87,7 +91,7 @@ font-size: 16px;
    <property name="font">
     <font>
      <family>Avenir Next</family>
-     <pointsize>16</pointsize>
+     <pointsize>-1</pointsize>
     </font>
    </property>
    <property name="styleSheet">
@@ -97,6 +101,9 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+#pushButton_2:hover {
+background-color: #9db1cc
 }</string>
    </property>
    <property name="text">
@@ -115,7 +122,7 @@ font-size: 16px;
    <property name="font">
     <font>
      <family>Avenir Next</family>
-     <pointsize>16</pointsize>
+     <pointsize>-1</pointsize>
     </font>
    </property>
    <property name="styleSheet">
@@ -140,7 +147,7 @@ font-size: 16px;
    <property name="font">
     <font>
      <family>Avenir Next</family>
-     <pointsize>16</pointsize>
+     <pointsize>-1</pointsize>
     </font>
    </property>
    <property name="styleSheet">
@@ -165,7 +172,6 @@ font-size: 16px;
    <property name="styleSheet">
     <string notr="true">#lineEdit {
 border-radius:5%;
-background-color: #e2f2fc;
 }</string>
    </property>
   </widget>
@@ -181,7 +187,6 @@ background-color: #e2f2fc;
    <property name="styleSheet">
     <string notr="true">#lineEdit_2 {
 border-radius:5%;
-background-color: #e2f2fc;
 }</string>
    </property>
    <property name="echoMode">

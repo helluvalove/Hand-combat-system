@@ -65,6 +65,10 @@ border-radius:7%;
 border: 1px solid grey;
 font-family: Avenir Next;
 font-size: 16px;
+}
+
+#pushButton:hover {
+background-color: #9db1cc
 }</string>
    </property>
    <property name="text">
