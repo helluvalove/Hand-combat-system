@@ -46,7 +46,7 @@ font-size: 16px;
 }</string>
    </property>
    <property name="text">
-    <string>Вы действительно хотите удалить запись о тренировке?</string>
+    <string>Вы действительно хотите удалить спортсмена из базы?</string>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton">

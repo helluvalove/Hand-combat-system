@@ -65,7 +65,7 @@ border-radius:5%;
     </rect>
    </property>
    <property name="editable">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="currentText">
     <string/>
@@ -81,7 +81,7 @@ border-radius:5%;
     </rect>
    </property>
    <property name="editable">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QLabel" name="label_2">

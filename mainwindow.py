@@ -67,7 +67,7 @@ class Ui_Mainwindow(object):
         self.grupaBox_tab1 = QtWidgets.QComboBox(self.tab_8)
         self.grupaBox_tab1.setGeometry(QtCore.QRect(100, 30, 161, 21))
         self.grupaBox_tab1.setStyleSheet("")
-        self.grupaBox_tab1.setEditable(True)
+        self.grupaBox_tab1.setEditable(False)
         self.grupaBox_tab1.setObjectName("grupaBox_tab1")
         self.tableposeshaem = QtWidgets.QTableWidget(self.tab_8)
         self.tableposeshaem.setGeometry(QtCore.QRect(30, 70, 1071, 421))
@@ -86,7 +86,7 @@ class Ui_Mainwindow(object):
         self.tab_7.setObjectName("tab_7")
         self.grupaBox_tab2 = QtWidgets.QComboBox(self.tab_7)
         self.grupaBox_tab2.setGeometry(QtCore.QRect(950, 50, 131, 22))
-        self.grupaBox_tab2.setEditable(True)
+        self.grupaBox_tab2.setEditable(False)
         self.grupaBox_tab2.setObjectName("grupaBox_tab2")
         self.label_2 = QtWidgets.QLabel(self.tab_7)
         self.label_2.setGeometry(QtCore.QRect(890, 50, 61, 20))
@@ -95,9 +95,9 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}")
         self.label_2.setObjectName("label_2")
-        self.sozdatbutton_tab2 = QtWidgets.QPushButton(self.tab_7)
-        self.sozdatbutton_tab2.setGeometry(QtCore.QRect(780, 50, 85, 25))
-        self.sozdatbutton_tab2.setStyleSheet("#pushButton_2 {\n"
+        self.addbutton_tab2 = QtWidgets.QPushButton(self.tab_7)
+        self.addbutton_tab2.setGeometry(QtCore.QRect(780, 50, 85, 25))
+        self.addbutton_tab2.setStyleSheet("#addbutton_tab2 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -105,13 +105,13 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_2:hover {\n"
+"#addbutton_tab2:hover {\n"
 "background-color: #71bc78\n"
 "}")
-        self.sozdatbutton_tab2.setObjectName("sozdatbutton_tab2")
+        self.addbutton_tab2.setObjectName("addbutton_tab2")
         self.izmenbutton_tab2 = QtWidgets.QPushButton(self.tab_7)
         self.izmenbutton_tab2.setGeometry(QtCore.QRect(780, 90, 85, 25))
-        self.izmenbutton_tab2.setStyleSheet("#pushButton_3 {\n"
+        self.izmenbutton_tab2.setStyleSheet("#izmenbutton_tab2 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -119,13 +119,13 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_3:hover {\n"
+"#izmenbutton_tab2:hover {\n"
 "background-color: #eedc82\n"
 "}")
         self.izmenbutton_tab2.setObjectName("izmenbutton_tab2")
-        self.udalbutton_tab2 = QtWidgets.QPushButton(self.tab_7)
-        self.udalbutton_tab2.setGeometry(QtCore.QRect(780, 130, 85, 25))
-        self.udalbutton_tab2.setStyleSheet("#pushButton_4 {\n"
+        self.delbutton_tab2 = QtWidgets.QPushButton(self.tab_7)
+        self.delbutton_tab2.setGeometry(QtCore.QRect(780, 130, 85, 25))
+        self.delbutton_tab2.setStyleSheet("#delbutton_tab2 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -133,10 +133,10 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_4:hover {\n"
+"#delbutton_tab2:hover {\n"
 "background-color: #cf7373\n"
 "}")
-        self.udalbutton_tab2.setObjectName("udalbutton_tab2")
+        self.delbutton_tab2.setObjectName("delbutton_tab2")
         self.calendarWidget = QtWidgets.QCalendarWidget(self.tab_7)
         self.calendarWidget.setGeometry(QtCore.QRect(30, 10, 701, 471))
         font = QtGui.QFont()
@@ -278,9 +278,9 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}")
         self.tab_6.setObjectName("tab_6")
-        self.dobavbutton_tab3 = QtWidgets.QPushButton(self.tab_6)
-        self.dobavbutton_tab3.setGeometry(QtCore.QRect(30, 30, 85, 25))
-        self.dobavbutton_tab3.setStyleSheet("#pushButton_5 {\n"
+        self.addbutton_tab3 = QtWidgets.QPushButton(self.tab_6)
+        self.addbutton_tab3.setGeometry(QtCore.QRect(30, 30, 85, 25))
+        self.addbutton_tab3.setStyleSheet("#addbutton_tab3 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -288,13 +288,13 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_5:hover {\n"
+"#addbutton_tab3:hover {\n"
 "background-color: #71bc78\n"
 "}")
-        self.dobavbutton_tab3.setObjectName("dobavbutton_tab3")
+        self.addbutton_tab3.setObjectName("addbutton_tab3")
         self.izmenbutton_tab3 = QtWidgets.QPushButton(self.tab_6)
         self.izmenbutton_tab3.setGeometry(QtCore.QRect(140, 30, 85, 25))
-        self.izmenbutton_tab3.setStyleSheet("#pushButton_6 {\n"
+        self.izmenbutton_tab3.setStyleSheet("#izmenbutton_tab3 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -302,13 +302,13 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_6:hover {\n"
+"#izmenbutton_tab3:hover {\n"
 "background-color: #eedc82\n"
 "}")
         self.izmenbutton_tab3.setObjectName("izmenbutton_tab3")
         self.delbutton_tab3 = QtWidgets.QPushButton(self.tab_6)
         self.delbutton_tab3.setGeometry(QtCore.QRect(250, 30, 85, 25))
-        self.delbutton_tab3.setStyleSheet("#pushButton_7 {\n"
+        self.delbutton_tab3.setStyleSheet("#delbutton_tab3 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -316,7 +316,7 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_7:hover {\n"
+"#delbutton_tab3:hover {\n"
 "background-color: #cf7373\n"
 "}")
         self.delbutton_tab3.setObjectName("delbutton_tab3")
@@ -346,9 +346,9 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}")
         self.tab_5.setObjectName("tab_5")
-        self.dobavbutton_tab4 = QtWidgets.QPushButton(self.tab_5)
-        self.dobavbutton_tab4.setGeometry(QtCore.QRect(30, 30, 85, 25))
-        self.dobavbutton_tab4.setStyleSheet("#pushButton_8 {\n"
+        self.addbutton_tab4 = QtWidgets.QPushButton(self.tab_5)
+        self.addbutton_tab4.setGeometry(QtCore.QRect(30, 30, 85, 25))
+        self.addbutton_tab4.setStyleSheet("#addbutton_tab4 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -356,13 +356,13 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_8:hover {\n"
+"#addbutton_tab4:hover {\n"
 "background-color: #71bc78\n"
 "}")
-        self.dobavbutton_tab4.setObjectName("dobavbutton_tab4")
+        self.addbutton_tab4.setObjectName("addbutton_tab4")
         self.izmenbutton_tab4 = QtWidgets.QPushButton(self.tab_5)
         self.izmenbutton_tab4.setGeometry(QtCore.QRect(140, 30, 85, 25))
-        self.izmenbutton_tab4.setStyleSheet("#pushButton_9 {\n"
+        self.izmenbutton_tab4.setStyleSheet("#izmenbutton_tab4 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -370,13 +370,13 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_9:hover {\n"
+"#izmenbutton_tab4:hover {\n"
 "background-color: #eedc82\n"
 "}")
         self.izmenbutton_tab4.setObjectName("izmenbutton_tab4")
         self.delbutton_tab4 = QtWidgets.QPushButton(self.tab_5)
         self.delbutton_tab4.setGeometry(QtCore.QRect(250, 30, 85, 25))
-        self.delbutton_tab4.setStyleSheet("#pushButton_10 {\n"
+        self.delbutton_tab4.setStyleSheet("#delbutton_tab4 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -384,7 +384,7 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_10:hover {\n"
+"#delbutton_tab4:hover {\n"
 "background-color: #cf7373\n"
 "}")
         self.delbutton_tab4.setObjectName("delbutton_tab4")
@@ -413,14 +413,14 @@ class Ui_Mainwindow(object):
         self.lineEdit_tab5.setObjectName("lineEdit_tab5")
         self.izmenbutton_tab5 = QtWidgets.QPushButton(self.tab)
         self.izmenbutton_tab5.setGeometry(QtCore.QRect(140, 30, 85, 25))
-        self.izmenbutton_tab5.setStyleSheet("#pushButton_11 {\n"
+        self.izmenbutton_tab5.setStyleSheet("#izmenbutton_tab5 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
 "font-family: Avenir Next;\n"
 "font-size: 16px;\n"
 "}\n"
-"#pushButton_11:hover {\n"
+"#izmenbutton_tab5:hover {\n"
 "background-color: #eedc82\n"
 "}")
         self.izmenbutton_tab5.setObjectName("izmenbutton_tab5")
@@ -429,7 +429,7 @@ class Ui_Mainwindow(object):
         self.listView_tab5.setObjectName("listView_tab5")
         self.delbutton_tab5 = QtWidgets.QPushButton(self.tab)
         self.delbutton_tab5.setGeometry(QtCore.QRect(250, 30, 85, 25))
-        self.delbutton_tab5.setStyleSheet("#pushButton_12 {\n"
+        self.delbutton_tab5.setStyleSheet("#delbutton_tab5 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -437,13 +437,13 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_12:hover {\n"
+"#delbutton_tab5:hover {\n"
 "background-color: #cf7373\n"
 "}")
         self.delbutton_tab5.setObjectName("delbutton_tab5")
-        self.sozdatbutton_tab5 = QtWidgets.QPushButton(self.tab)
-        self.sozdatbutton_tab5.setGeometry(QtCore.QRect(30, 30, 85, 25))
-        self.sozdatbutton_tab5.setStyleSheet("#pushButton_13 {\n"
+        self.addbutton_tab5 = QtWidgets.QPushButton(self.tab)
+        self.addbutton_tab5.setGeometry(QtCore.QRect(30, 30, 85, 25))
+        self.addbutton_tab5.setStyleSheet("#addbutton_tab5 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -451,17 +451,17 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_13:hover {\n"
+"#addbutton_tab5:hover {\n"
 "background-color: #71bc78\n"
 "}")
-        self.sozdatbutton_tab5.setObjectName("sozdatbutton_tab5")
+        self.addbutton_tab5.setObjectName("addbutton_tab5")
         self.textBrowser_tab5 = QtWidgets.QTextBrowser(self.tab)
         self.textBrowser_tab5.setGeometry(QtCore.QRect(40, 110, 1041, 71))
         self.textBrowser_tab5.setObjectName("textBrowser_tab5")
         self.izmenbutton_tab5.raise_()
         self.listView_tab5.raise_()
         self.delbutton_tab5.raise_()
-        self.sozdatbutton_tab5.raise_()
+        self.addbutton_tab5.raise_()
         self.lineEdit_tab5.raise_()
         self.textBrowser_tab5.raise_()
         self.tabWidget.addTab(self.tab, "")
@@ -484,7 +484,7 @@ class Ui_Mainwindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.grupaBox_tab6.sizePolicy().hasHeightForWidth())
         self.grupaBox_tab6.setSizePolicy(sizePolicy)
-        self.grupaBox_tab6.setEditable(True)
+        self.grupaBox_tab6.setEditable(False)
         self.grupaBox_tab6.setObjectName("grupaBox_tab6")
         self.label_3 = QtWidgets.QLabel(self.tab_2)
         self.label_3.setGeometry(QtCore.QRect(760, 40, 111, 21))
@@ -508,7 +508,7 @@ class Ui_Mainwindow(object):
         self.dateEdit_tab6.setObjectName("dateEdit_tab6")
         self.clearbutton_tab6 = QtWidgets.QPushButton(self.tab_2)
         self.clearbutton_tab6.setGeometry(QtCore.QRect(760, 430, 85, 25))
-        self.clearbutton_tab6.setStyleSheet("#pushButton_14 {\n"
+        self.clearbutton_tab6.setStyleSheet("#clearbutton_tab6 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -516,7 +516,7 @@ class Ui_Mainwindow(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_14:hover {\n"
+"#clearbutton_tab6:hover {\n"
 "background-color: #9db1cc\n"
 "}")
         self.clearbutton_tab6.setObjectName("clearbutton_tab6")
@@ -532,22 +532,22 @@ class Ui_Mainwindow(object):
         self.tableWidget_tab6.setColumnCount(0)
         self.tableWidget_tab6.setRowCount(0)
         self.tabWidget.addTab(self.tab_2, "")
-        self.pushButton = QtWidgets.QPushButton(Dialog)
-        self.pushButton.setGeometry(QtCore.QRect(1057, 0, 54, 39))
-        self.pushButton.setStyleSheet("#pushButton {\n"
+        self.exitButton = QtWidgets.QPushButton(Dialog)
+        self.exitButton.setGeometry(QtCore.QRect(1057, 0, 54, 36))
+        self.exitButton.setStyleSheet("#exitButton {\n"
 "background-color: #cf7373;\n"
 "border: 1px solid grey;\n"
 "font-family: Avenir Next;\n"
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton:hover {\n"
+"#exitButton:hover {\n"
 "background-color: #bc5d58\n"
 "}")
-        self.pushButton.setObjectName("pushButton")
+        self.exitButton.setObjectName("exitButton")
 
         self.retranslateUi(Dialog)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
@@ -556,16 +556,16 @@ class Ui_Mainwindow(object):
         self.label.setText(_translate("Dialog", "Группа:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_8), _translate("Dialog", "Посещаемость"))
         self.label_2.setText(_translate("Dialog", "Группа:"))
-        self.sozdatbutton_tab2.setText(_translate("Dialog", "Создать"))
+        self.addbutton_tab2.setText(_translate("Dialog", "Создать"))
         self.izmenbutton_tab2.setText(_translate("Dialog", "Изменить"))
-        self.udalbutton_tab2.setText(_translate("Dialog", "Удалить"))
+        self.delbutton_tab2.setText(_translate("Dialog", "Удалить"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_7), _translate("Dialog", "Расписание занятий"))
-        self.dobavbutton_tab3.setText(_translate("Dialog", "Добавить"))
+        self.addbutton_tab3.setText(_translate("Dialog", "Добавить"))
         self.izmenbutton_tab3.setText(_translate("Dialog", "Изменить"))
         self.delbutton_tab3.setText(_translate("Dialog", "Удалить"))
         self.lineEdit_tab3.setPlaceholderText(_translate("Dialog", "Поиск..."))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), _translate("Dialog", "Тренеры"))
-        self.dobavbutton_tab4.setText(_translate("Dialog", "Добавить"))
+        self.addbutton_tab4.setText(_translate("Dialog", "Добавить"))
         self.izmenbutton_tab4.setText(_translate("Dialog", "Изменить"))
         self.delbutton_tab4.setText(_translate("Dialog", "Удалить"))
         self.lineEdit_tab4.setPlaceholderText(_translate("Dialog", "Поиск..."))
@@ -573,10 +573,10 @@ class Ui_Mainwindow(object):
         self.lineEdit_tab5.setPlaceholderText(_translate("Dialog", "Поиск..."))
         self.izmenbutton_tab5.setText(_translate("Dialog", "Изменить"))
         self.delbutton_tab5.setText(_translate("Dialog", "Удалить"))
-        self.sozdatbutton_tab5.setText(_translate("Dialog", "Создать"))
+        self.addbutton_tab5.setText(_translate("Dialog", "Создать"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("Dialog", "Группы"))
         self.label_3.setText(_translate("Dialog", "Дата периода:"))
         self.label_4.setText(_translate("Dialog", "Группа:"))
         self.clearbutton_tab6.setText(_translate("Dialog", "Очистить"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("Dialog", "Отчетность"))
-        self.pushButton.setText(_translate("Dialog", "×"))
+        self.exitButton.setText(_translate("Dialog", "×"))

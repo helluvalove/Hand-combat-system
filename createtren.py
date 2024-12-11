@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_Dialog(object):
+class Ui_Createtren(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(389, 292)
@@ -10,15 +10,15 @@ class Ui_Dialog(object):
         Dialog.setStyleSheet("#Dialog {\n"
 "background-color: #e0f0ff\n"
 "}")
-        self.nazvanie_tren = QtWidgets.QLineEdit(Dialog)
-        self.nazvanie_tren.setGeometry(QtCore.QRect(30, 40, 331, 31))
-        self.nazvanie_tren.setStyleSheet("#lineEdit {\n"
+        self.name_tren = QtWidgets.QLineEdit(Dialog)
+        self.name_tren.setGeometry(QtCore.QRect(30, 40, 331, 31))
+        self.name_tren.setStyleSheet("#name_tren {\n"
 "background-color: #FFFFFF;\n"
 "border-radius:5%;\n"
 "}")
-        self.nazvanie_tren.setFrame(True)
-        self.nazvanie_tren.setDragEnabled(False)
-        self.nazvanie_tren.setObjectName("nazvanie_tren")
+        self.name_tren.setFrame(True)
+        self.name_tren.setDragEnabled(False)
+        self.name_tren.setObjectName("name_tren")
         self.trenerBox_soztren = QtWidgets.QComboBox(Dialog)
         self.trenerBox_soztren.setGeometry(QtCore.QRect(27, 110, 336, 26))
         self.trenerBox_soztren.setEditable(True)
@@ -55,9 +55,9 @@ class Ui_Dialog(object):
         self.dateTimeEdit_soztren.setMinimumDate(QtCore.QDate(2024, 1, 1))
         self.dateTimeEdit_soztren.setCalendarPopup(True)
         self.dateTimeEdit_soztren.setObjectName("dateTimeEdit_soztren")
-        self.sozdatbutton_soztren = QtWidgets.QPushButton(Dialog)
-        self.sozdatbutton_soztren.setGeometry(QtCore.QRect(290, 250, 85, 25))
-        self.sozdatbutton_soztren.setStyleSheet("#pushButton {\n"
+        self.addbutton_soztren = QtWidgets.QPushButton(Dialog)
+        self.addbutton_soztren.setGeometry(QtCore.QRect(290, 250, 85, 25))
+        self.addbutton_soztren.setStyleSheet("#addbutton_soztren {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -65,13 +65,13 @@ class Ui_Dialog(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton:hover {\n"
+"#addbutton_soztren:hover {\n"
 "background-color: #71bc78\n"
 "}")
-        self.sozdatbutton_soztren.setObjectName("sozdatbutton_soztren")
-        self.otmenabutton_soztren = QtWidgets.QPushButton(Dialog)
-        self.otmenabutton_soztren.setGeometry(QtCore.QRect(190, 250, 85, 25))
-        self.otmenabutton_soztren.setStyleSheet("#pushButton_2 {\n"
+        self.addbutton_soztren.setObjectName("addbutton_soztren")
+        self.cancelbutton_soztren = QtWidgets.QPushButton(Dialog)
+        self.cancelbutton_soztren.setGeometry(QtCore.QRect(190, 250, 85, 25))
+        self.cancelbutton_soztren.setStyleSheet("#cancelbutton_soztren {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
 "border: 1px solid grey;\n"
@@ -79,10 +79,11 @@ class Ui_Dialog(object):
 "font-size: 16px;\n"
 "}\n"
 "\n"
-"#pushButton_2:hover {\n"
+"#cancelbutton_soztren:hover {\n"
 "background-color: #9db1cc\n"
 "}")
-        self.otmenabutton_soztren.setObjectName("otmenabutton_soztren")
+        self.cancelbutton_soztren.setObjectName("cancelbutton_soztren")
+        self.cancelbutton_soztren.clicked.connect(Dialog.close)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -90,8 +91,8 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Создание тренировки"))
-        self.nazvanie_tren.setPlaceholderText(_translate("Dialog", "Название тренировки..."))
+        self.name_tren.setPlaceholderText(_translate("Dialog", "Название тренировки..."))
         self.label_2.setText(_translate("Dialog", "Тренер:"))
         self.label_3.setText(_translate("Dialog", "Группа:"))
-        self.sozdatbutton_soztren.setText(_translate("Dialog", "Создать"))
-        self.otmenabutton_soztren.setText(_translate("Dialog", "Отмена"))
+        self.addbutton_soztren.setText(_translate("Dialog", "Создать"))
+        self.cancelbutton_soztren.setText(_translate("Dialog", "Отмена"))

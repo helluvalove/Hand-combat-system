@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>620</width>
+    <height>292</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>620</width>
+    <height>292</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>620</width>
+    <height>292</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Добавление спортсмена</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">#Dialog {
+background-color: #e0f0ff
+}
+</string>
+  </property>
+  <widget class="QPushButton" name="addbutton_sportman">
+   <property name="geometry">
+    <rect>
+     <x>515</x>
+     <y>250</y>
+     <width>85</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#addbutton_sportman {
+background-color: #b0c4de;
+border-radius:7%;
+border: 1px solid grey;
+font-family: Avenir Next;
+font-size: 16px;
+}
+
+#addbutton_sportman:hover {
+background-color: #71bc78
+}</string>
+   </property>
+   <property name="text">
+    <string>Добавить</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="surname_sportman">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>30</y>
+     <width>180</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#surname_sportman{
+background-color: #FFFFFF;
+border-radius:5%;
+}</string>
+   </property>
+   <property name="placeholderText">
+    <string>Имя</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="cancelbutton_sportman">
+   <property name="geometry">
+    <rect>
+     <x>410</x>
+     <y>250</y>
+     <width>85</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#cancelbutton_sportman {
+background-color: #b0c4de;
+border-radius:7%;
+border: 1px solid grey;
+font-family: Avenir Next;
+font-size: 16px;
+}
+
+#cancelbutton_sportman:hover {
+background-color: #9db1cc
+}</string>
+   </property>
+   <property name="text">
+    <string>Отмена</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="otchestvo_sportman">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>30</y>
+     <width>180</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#otchestvo_sportman {
+background-color: #FFFFFF;
+border-radius:5%;
+}</string>
+   </property>
+   <property name="placeholderText">
+    <string>Отчество</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="name_sportman">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>30</y>
+     <width>180</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#name_sportman {
+background-color: #FFFFFF;
+border-radius:5%;
+}</string>
+   </property>
+   <property name="placeholderText">
+    <string>Фамилия</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="grupaBox_sportman">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>90</y>
+     <width>151</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="editable">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>24</x>
+     <y>70</y>
+     <width>60</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#label {
+font-family: Avenir Next;
+font-size: 16px;
+}</string>
+   </property>
+   <property name="text">
+    <string>Группа:</string>
+   </property>
+  </widget>
+  <widget class="QDateEdit" name="datebirth_sportman">
+   <property name="geometry">
+    <rect>
+     <x>22</x>
+     <y>146</y>
+     <width>110</width>
+     <height>24</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>24</x>
+     <y>125</y>
+     <width>161</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#label_2 {
+font-family: Avenir Next;
+font-size: 16px;
+}</string>
+   </property>
+   <property name="text">
+    <string>Дата рождения:</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="sportrazrBox">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>203</y>
+     <width>261</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="editable">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>24</x>
+     <y>180</y>
+     <width>161</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#label_3 {
+font-family: Avenir Next;
+font-size: 16px;
+}</string>
+   </property>
+   <property name="text">
+    <string>Спортивный разряд:</string>
+   </property>
+  </widget>
+  <zorder>addbutton_sportman</zorder>
+  <zorder>surname_sportman</zorder>
+  <zorder>cancelbutton_sportman</zorder>
+  <zorder>otchestvo_sportman</zorder>
+  <zorder>name_sportman</zorder>
+  <zorder>grupaBox_sportman</zorder>
+  <zorder>label</zorder>
+  <zorder>datebirth_sportman</zorder>
+  <zorder>label_2</zorder>
+  <zorder>label_3</zorder>
+  <zorder>sportrazrBox</zorder>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
