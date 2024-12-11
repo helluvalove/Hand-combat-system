@@ -8,6 +8,7 @@ from PyQt5.QtGui import QTextCharFormat, QColor
 from PyQt5.QtCore import QDate
 from mainwindow import Ui_Mainwindow
 from createtren import Ui_Createtren
+from create_sportman import Ui_SportMan
 
 DATA_FILE = "data.json"
 
@@ -54,7 +55,47 @@ class CreateTren(QDialog):
         self.ui = Ui_Createtren()
         self.ui.setupUi(self)
 
-class MainWindow(QDialog):
+class SportManDialog(QDialog, Ui_SportMan):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)  
+        self.setup_widgets()
+
+        self.addbutton_sportman.clicked.connect(self.on_add_clicked)
+        self.cancelbutton_sportman.clicked.connect(self.reject)
+
+    def setup_widgets(self):
+        self.sportrazrBox.addItem("")
+        self.sportrazrBox.addItems([
+            "3ий юношеский", "2ой юношеский", "1ый юношеский",
+            "3ий спортивный", "2ой спортивный", "1ый спортивный",
+            "КМС", "МС", "МСМК", "ЗМС"
+        ])
+
+        self.datebirth_sportman.setCalendarPopup(True)
+
+    def on_add_clicked(self):
+        name = self.name_sportman.text()
+        surname = self.surname_sportman.text()
+        otchestvo = self.otchestvo_sportman.text()
+        grupa = self.grupaBox_sportman.currentText()
+        datebirth = self.datebirth_sportman.date().toString("yyyy-MM-dd")
+        sportrazr = self.sportrazrBox.currentText()
+
+        if not name or not surname or not grupa:
+            print("Все обязательные поля должны быть заполнены!")
+            return
+        
+        if sportrazr == "":
+            QMessageBox.warning(self, "Ошибка", "Выберите спортивный разряд!")
+            return
+
+        print(f"Добавлен спортсмен: {surname} {name} {otchestvo}, группа: {grupa}, "
+              f"дата рождения: {datebirth}, разряд: {sportrazr}")
+
+        self.accept() 
+
+class MainWindow(QDialog, Ui_Mainwindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_Mainwindow()
@@ -118,23 +159,7 @@ class MainWindow(QDialog):
         del_coach.exec_()
 
     def create_sportman_dialog(self):
-        create_sportman = QDialog(self)
-        uic.loadUi('forms/create_sportman.ui', create_sportman) 
-        add_button = create_sportman.findChild(QtWidgets.QPushButton, "addbutton_sportman")
-        cancel_button = create_sportman.findChild(QtWidgets.QPushButton, "cancelbutton_sportman")
-        if add_button:
-            add_button.clicked.connect(create_sportman.close) ##Добавление спортсмена в базу
-        if cancel_button:
-            cancel_button.clicked.connect(create_sportman.close)
-        sportrazr_box = create_sportman.findChild(QtWidgets.QComboBox, "sportrazrBox")
-        if sportrazr_box:
-            add_items_lambda = lambda: sportrazr_box.addItems(["3ий юношевский", "2ой юнешевский", 
-                                    "1ый юношевский", "3ий спортивный", 
-                                    "2ий спортивный", "1ый спортивный", 
-                                    "КМС", "МС", "МСМК", "ЗМС"])
-            add_items_lambda()
-        else:
-            print("sportrazrBox не найден!")
+        create_sportman = SportManDialog(self)  
         create_sportman.exec_()
 
     def del_sportman_dialog(self):
