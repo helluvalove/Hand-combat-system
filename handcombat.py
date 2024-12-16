@@ -3,12 +3,15 @@ import json
 import os 
 import time
 from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QRegExp
+from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow
-from PyQt5.QtGui import QTextCharFormat, QColor
-from PyQt5.QtCore import QDate
+# from PyQt5.QtGui import QTextCharFormat, QColor
+# from PyQt5.QtCore import QDate
 from mainwindow import Ui_Mainwindow
 from createtren import Ui_Createtren
 from create_sportman import Ui_SportMan
+from create_gruppa import Ui_CreateGruppa
 
 DATA_FILE = "data.json"
 
@@ -18,6 +21,13 @@ class LoginSystem(QDialog):
         uic.loadUi('forms/loginform.ui', self)
         self.pushButton.clicked.connect(self.login)  
         self.pushButton_2.clicked.connect(self.logout)  
+
+        no_space_validator = QRegExpValidator(QRegExp(r"[^\s]*"))
+        self.lineEdit.setValidator(no_space_validator)
+        self.lineEdit_2.setValidator(no_space_validator)
+
+        self.lineEdit.setMaxLength(15)  
+        self.lineEdit_2.setMaxLength(20)
 
     def login(self):
         username = self.lineEdit.text()  
@@ -58,7 +68,7 @@ class CreateTren(QDialog):
 class SportManDialog(QDialog, Ui_SportMan):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setupUi(self)  
+        self.setupUi(self)
         self.setup_widgets()
 
         self.addbutton_sportman.clicked.connect(self.on_add_clicked)
@@ -83,9 +93,9 @@ class SportManDialog(QDialog, Ui_SportMan):
         sportrazr = self.sportrazrBox.currentText()
 
         if not name or not surname or not grupa:
-            print("Все обязательные поля должны быть заполнены!")
+            QMessageBox.warning(self, "Ошибка", "Все обязательные поля должны быть заполнены!")
             return
-        
+
         if sportrazr == "":
             QMessageBox.warning(self, "Ошибка", "Выберите спортивный разряд!")
             return
@@ -93,7 +103,32 @@ class SportManDialog(QDialog, Ui_SportMan):
         print(f"Добавлен спортсмен: {surname} {name} {otchestvo}, группа: {grupa}, "
               f"дата рождения: {datebirth}, разряд: {sportrazr}")
 
-        self.accept() 
+        self.accept()
+
+class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)  
+        self.setup_widgets()
+
+        self.addbutton_grupa.clicked.connect(self.on_add_clicked)
+        self.cancelbutton_grupa.clicked.connect(self.reject)
+
+    def setup_widgets(self):
+        self.comboBox_trener.addItem("Выберите тренера")
+        self.comboBox_trener.addItems(["Тренер 1", "Тренер 2", "Тренер 3"])
+        self.comboBox_trener.setCurrentIndex(0)
+
+    def on_add_clicked(self):
+        name = self.name_grupa.text()
+        trener = self.comboBox_trener.currentText()
+
+        if not name or trener == "Выберите тренера":
+            QMessageBox.warning(self, "Ошибка", "Все обязательные поля должны быть заполнены!")
+            return
+
+        print(f"Добавлена группа: {name}, тренер: {trener}")
+        self.accept()
 
 class MainWindow(QDialog, Ui_Mainwindow):
     def __init__(self, parent=None):
@@ -115,6 +150,12 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.ui.addbutton_tab4.clicked.connect(self.create_sportman_dialog)
         self.ui.izmenbutton_tab4.clicked.connect(self.create_sportman_dialog)
         self.ui.delbutton_tab4.clicked.connect(self.del_sportman_dialog)
+
+        self.ui.addbutton_tab5.clicked.connect(self.create_gruppa_dialog)
+        self.ui.izmenbutton_tab5.clicked.connect(self.create_gruppa_dialog)
+        self.ui.delbutton_tab5.clicked.connect(self.del_gruppa_dialog)
+
+        self.ui.clearbutton_tab6.clicked.connect(self.del_otchet_dialog)
 
         self.login_window = LoginSystem()
         if self.login_window.exec_() != QDialog.Accepted:
@@ -172,6 +213,32 @@ class MainWindow(QDialog, Ui_Mainwindow):
         if no_button:
             no_button.clicked.connect(del_sportman.close)
         del_sportman.exec_()
+
+    def create_gruppa_dialog(self):
+        create_gruppa = CreateGruppaDialog(self)
+        create_gruppa.exec_()
+
+    def del_gruppa_dialog(self):
+        del_gruppa = QDialog(self)
+        uic.loadUi('forms/del_gruppa.ui', del_gruppa)
+        yes_button = del_gruppa.findChild(QtWidgets.QPushButton, "pushButton_2")
+        no_button = del_gruppa.findChild(QtWidgets.QPushButton, "pushButton")
+        if yes_button:
+            yes_button.clicked.connect(del_gruppa.close) ## Удаляет группу из базы
+        if no_button:
+            no_button.clicked.connect(del_gruppa.close)
+        del_gruppa.exec_()
+
+    def del_otchet_dialog(self):
+        del_otchet = QDialog(self)
+        uic.loadUi('forms/del_otchet.ui', del_otchet)
+        yes_button = del_otchet.findChild(QtWidgets.QPushButton, "pushButton_2")
+        no_button = del_otchet.findChild(QtWidgets.QPushButton, "pushButton")
+        if yes_button:
+            yes_button.clicked.connect(del_otchet.close) ##Очищает поля отчетов
+        if no_button:
+            no_button.clicked.connect(del_otchet.close)
+        del_otchet.exec_()
 
     def confirm_exit(self):
         logout_dialog = QDialog(self)
