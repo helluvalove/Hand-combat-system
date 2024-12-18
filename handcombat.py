@@ -1,19 +1,32 @@
 import sys
-import json
+import pymysql
 import os 
-import time
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QRegExp
+from PyQt5 import QtWidgets, QtGui, uic
+from PyQt5.QtCore import QRegExp, Qt
 from PyQt5.QtGui import QRegExpValidator
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow
-# from PyQt5.QtGui import QTextCharFormat, QColor
-# from PyQt5.QtCore import QDate
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QTableWidgetItem, QHeaderView
+from database import DatabaseManager
 from mainwindow import Ui_Mainwindow
 from createtren import Ui_Createtren
 from create_sportman import Ui_SportMan
 from create_gruppa import Ui_CreateGruppa
+from create_coach import Ui_CreateCoach
 
-DATA_FILE = "data.json"
+def connect_to_db():
+    try:
+        connection = pymysql.connect(
+            host="localhost",      
+            user="root",  
+            password="qwerty123",  
+            database="hand_combat",
+            charset="utf8mb4",
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        print("Успешное подключение к базе данных!")
+        return connection
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        return None
 
 class LoginSystem(QDialog):
     def __init__(self, parent=None):
@@ -32,10 +45,31 @@ class LoginSystem(QDialog):
     def login(self):
         username = self.lineEdit.text()  
         password = self.lineEdit_2.text()  
-        if username == "admin" and password == "password":
-            self.accept()
-        else:
-            self.show_error_dialog()
+        connection = connect_to_db()  # Подключаемся к БД
+        if not connection:
+            QMessageBox.critical(self, "Ошибка", "Не удалось подключиться к базе данных!")
+            return
+
+        try:
+            with connection.cursor() as cursor:
+                # Запрос для поиска пользователя по логину
+                query = "SELECT password FROM admin_user WHERE login = %s"
+                cursor.execute(query, (username,))
+                result = cursor.fetchone()  # Получаем первую строку результата
+
+                if result:
+                    # Сравнение пароля (с хэшированием)
+                    stored_password = result['password']
+                    if password == stored_password:  # Для хэшированных паролей нужно использовать bcrypt
+                        self.accept()
+                    else:
+                        self.show_error_dialog()
+                else:
+                    self.show_error_dialog()
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Ошибка запроса к базе данных: {e}")
+        finally:
+            connection.close()
 
     def logout(self):
         logout_dialog = QDialog(self)
@@ -57,6 +91,8 @@ class LoginSystem(QDialog):
         error_dialog.exec_()
 
     def exit_system(self):
+        logout_dialog = self.logout_dialog()
+        logout_dialog.exec_()
         self.close()
 
 class CreateTren(QDialog):
@@ -130,32 +166,95 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
         print(f"Добавлена группа: {name}, тренер: {trener}")
         self.accept()
 
+class CreateCoachDialog(QDialog, Ui_CreateCoach):
+    def __init__(self, db_manager, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)  # Задаём интерфейс через метод setupUi
+        self.db_manager = db_manager
+
+        # Подключаем обработчики событий
+        self.addbutton_coach.clicked.connect(self.add_coach_to_db)
+        self.cancelbutton_coach.clicked.connect(self.reject)
+
+    def add_coach_to_db(self):
+        """Добавляет тренера в базу данных и обновляет таблицу интерфейса."""
+        # Получаем данные из полей ввода
+        surname = self.surname_coach.text().strip()
+        name = self.name_coach.text().strip()
+        patronymic = self.otchestvo_coach.text().strip()
+        info = self.dopinfo_coach.toPlainText().strip()
+
+        # Проверяем обязательные поля
+        if not surname or not name:
+            QMessageBox.warning(self, "Ошибка", "Фамилия и Имя обязательны для заполнения!")
+            return
+
+        # Пытаемся выполнить запрос к базе данных
+        try:
+            # Вставляем данные тренера в базу данных
+            query = """
+            INSERT INTO Тренера (Фамилия, Имя, Отчество, Доп_информация)
+            VALUES (%s, %s, %s, %s)
+            """
+            params = (surname, name, patronymic, info)
+            self.db_manager.execute_query(query, params)
+
+            # Показываем сообщение об успешном добавлении
+            QMessageBox.information(self, "Успех", "Тренер успешно добавлен!")
+
+            # Очищаем поля ввода
+            self.surname_coach.clear()
+            self.name_coach.clear()
+            self.otchestvo_coach.clear()
+            self.dopinfo_coach.clear()
+
+            # Закрываем диалог и обновляем таблицу тренеров в главном окне
+            self.accept()
+            if self.parent():
+                self.parent().load_trainers()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось добавить тренера: {e}")
+
+    def closeEvent(self, event):
+        if self.parent() and hasattr(self.parent(), "load_trainers"):
+            self.parent().load_trainers()
+        super().closeEvent(event)
+    
 class MainWindow(QDialog, Ui_Mainwindow):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.ui = Ui_Mainwindow()
-        self.ui.setupUi(self)  
-        exit_button = self.ui.exitButton
+        self.setupUi(self)
+        self.db_manager = DatabaseManager(
+            host="127.0.0.1",
+            user="root",
+            password="qwerty123",
+            db_name="hand_combat",
+            charset="utf8mb4"
+        )
+        self.load_trainers()
+        
+        exit_button = self.exitButton
         if exit_button:
             exit_button.clicked.connect(self.confirm_exit)
 
-        self.ui.addbutton_tab2.clicked.connect(self.open_create_tren_dialog)
-        self.ui.izmenbutton_tab2.clicked.connect(self.open_create_tren_dialog)
-        self.ui.delbutton_tab2.clicked.connect(self.del_tren_dialog)
+        self.addbutton_tab2.clicked.connect(self.open_create_tren_dialog)
+        self.izmenbutton_tab2.clicked.connect(self.open_create_tren_dialog)
+        self.delbutton_tab2.clicked.connect(self.del_tren_dialog)
 
-        self.ui.addbutton_tab3.clicked.connect(self.create_coach_dialog)
-        self.ui.izmenbutton_tab3.clicked.connect(self.create_coach_dialog)
-        self.ui.delbutton_tab3.clicked.connect(self.del_coach_dialog)
+        self.addbutton_tab3.clicked.connect(self.create_coach_dialog)
+        self.izmenbutton_tab3.clicked.connect(self.create_coach_dialog)
+        self.delbutton_tab3.clicked.connect(self.del_coach_dialog)
 
-        self.ui.addbutton_tab4.clicked.connect(self.create_sportman_dialog)
-        self.ui.izmenbutton_tab4.clicked.connect(self.create_sportman_dialog)
-        self.ui.delbutton_tab4.clicked.connect(self.del_sportman_dialog)
+        self.addbutton_tab4.clicked.connect(self.create_sportman_dialog)
+        self.izmenbutton_tab4.clicked.connect(self.create_sportman_dialog)
+        self.delbutton_tab4.clicked.connect(self.del_sportman_dialog)
 
-        self.ui.addbutton_tab5.clicked.connect(self.create_gruppa_dialog)
-        self.ui.izmenbutton_tab5.clicked.connect(self.create_gruppa_dialog)
-        self.ui.delbutton_tab5.clicked.connect(self.del_gruppa_dialog)
+        self.addbutton_tab5.clicked.connect(self.create_gruppa_dialog)
+        self.izmenbutton_tab5.clicked.connect(self.create_gruppa_dialog)
+        self.delbutton_tab5.clicked.connect(self.del_gruppa_dialog)
 
-        self.ui.clearbutton_tab6.clicked.connect(self.del_otchet_dialog)
+        self.clearbutton_tab6.clicked.connect(self.del_otchet_dialog)
 
         self.login_window = LoginSystem()
         if self.login_window.exec_() != QDialog.Accepted:
@@ -178,16 +277,46 @@ class MainWindow(QDialog, Ui_Mainwindow):
         del_tren.exec_()
 
     def create_coach_dialog(self):
-        create_coach = QDialog(self)
-        uic.loadUi('forms/create_coach.ui', create_coach)
-        add_button = create_coach.findChild(QtWidgets.QPushButton, "addbutton_coach")
-        cancel_button = create_coach.findChild(QtWidgets.QPushButton, "cancelbutton_coach")
-        if add_button:
-            add_button.clicked.connect(create_coach.close) ##Добавление тренера в базу
-        if cancel_button:
-            cancel_button.clicked.connect(create_coach.close)
-        create_coach.exec_()
+        create_coach_dialog = CreateCoachDialog(self.db_manager, self)
+        if create_coach_dialog.exec_():
+            self.load_trainers()
 
+    def load_trainers(self):
+        try:
+            connection = connect_to_db()
+            if not connection:
+                QMessageBox.critical(self, "Ошибка", "Не удалось подключиться к базе данных!")
+                return
+
+            with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+                query = "SELECT Фамилия, Имя, Отчество, Доп_информация FROM Тренера"
+                cursor.execute(query)
+                trainers = cursor.fetchall()
+
+            # Очищаем таблицу
+            self.tableWidget_tab3.clearContents()
+            self.tableWidget_tab3.setRowCount(len(trainers))
+            self.tableWidget_tab3.setColumnCount(4)
+            self.tableWidget_tab3.setHorizontalHeaderLabels(['Фамилия', 'Имя', 'Отчество', 'Дополнительная информация'])
+
+            self.tableWidget_tab3.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+            self.tableWidget_tab3.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+            self.tableWidget_tab3.setColumnWidth(3, 300)
+
+            for row_index, trainer in enumerate(trainers):
+                item = QTableWidgetItem(f'{str(trainer['Фамилия'])}')
+                self.tableWidget_tab3.setItem(row_index, 0, item)
+                self.tableWidget_tab3.setItem(row_index, 1, QTableWidgetItem(trainer['Имя']))
+                self.tableWidget_tab3.setItem(row_index, 2, QTableWidgetItem(trainer['Отчество']))
+                self.tableWidget_tab3.setItem(row_index, 3, QTableWidgetItem(trainer['Доп_информация']))
+
+
+        except pymysql.Error as e:
+            QMessageBox.critical(self, "Ошибка загрузки данных", f"Ошибка при обращении к базе данных: {e}")
+        finally:
+            if connection:
+                connection.close()
+                
     def del_coach_dialog(self):
         del_coach = QDialog(self)
         uic.loadUi('forms/delcoach.ui', del_coach)
