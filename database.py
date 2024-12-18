@@ -26,32 +26,20 @@ class DatabaseManager:
             logger.error(f"Ошибка подключения к базе данных: {e}")
             raise
 
-    def execute_query(self, query, params=None):
+    def execute_query(self, query, params=None, fetch=False):
         connection = self.connect_to_db()
         if not connection:
             return False
         try:
             with connection.cursor() as cursor:
                 cursor.execute(query, params or ())
+                if fetch:
+                    return cursor.fetchall()
                 connection.commit()
                 return True
         except Exception as e:
             logger.error(f"Ошибка выполнения запроса: {e}")
             return False
-        finally:
-            connection.close()
-
-    def fetch_results(self, query, params=None):
-        connection = self.connect_to_db()
-        if not connection:
-            return None
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute(query, params or ())
-                return cursor.fetchall()
-        except Exception as e:
-            logger.error(f"Ошибка выполнения запроса SELECT: {e}")
-            return None
         finally:
             connection.close()
 

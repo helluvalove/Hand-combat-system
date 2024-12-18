@@ -4,13 +4,14 @@ import os
 from PyQt5 import QtWidgets, QtGui, uic
 from PyQt5.QtCore import QRegExp, Qt
 from PyQt5.QtGui import QRegExpValidator
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QTableWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton, QTableWidgetItem, QHeaderView, QTableWidget
 from database import DatabaseManager
 from mainwindow import Ui_Mainwindow
 from createtren import Ui_Createtren
 from create_sportman import Ui_SportMan
 from create_gruppa import Ui_CreateGruppa
 from create_coach import Ui_CreateCoach
+from edit_coach import Ui_EditCoach
 
 def connect_to_db():
     try:
@@ -167,17 +168,27 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
         self.accept()
 
 class CreateCoachDialog(QDialog, Ui_CreateCoach):
-    def __init__(self, db_manager, parent=None):
+    def __init__(self, db_manager, parent=None, view_mode=False):
         super().__init__(parent)
         self.setupUi(self)  # Задаём интерфейс через метод setupUi
         self.db_manager = db_manager
+        self.view_mode = view_mode
 
         # Подключаем обработчики событий
         self.addbutton_coach.clicked.connect(self.add_coach_to_db)
         self.cancelbutton_coach.clicked.connect(self.reject)
 
+        if self.view_mode:
+            # Блокируем поля для редактирования и кнопку "Добавить"
+            self.surname_coach.setReadOnly(True)
+            self.name_coach.setReadOnly(True)
+            self.otchestvo_coach.setReadOnly(True)
+            self.dopinfo_coach.setReadOnly(True)
+            self.add_button = self.findChild(QPushButton, "addbutton_coach")
+            if self.add_button:
+                self.add_button.setEnabled(False)  # Блокируем кнопку "Добавить"
+
     def add_coach_to_db(self):
-        """Добавляет тренера в базу данных и обновляет таблицу интерфейса."""
         # Получаем данные из полей ввода
         surname = self.surname_coach.text().strip()
         name = self.name_coach.text().strip()
@@ -187,40 +198,78 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
         # Проверяем обязательные поля
         if not surname or not name:
             QMessageBox.warning(self, "Ошибка", "Фамилия и Имя обязательны для заполнения!")
-            return
+            return False  # Возвращаем False если проверка не пройдена
 
-        # Пытаемся выполнить запрос к базе данных
-        try:
-            # Вставляем данные тренера в базу данных
-            query = """
-            INSERT INTO Тренера (Фамилия, Имя, Отчество, Доп_информация)
-            VALUES (%s, %s, %s, %s)
-            """
-            params = (surname, name, patronymic, info)
-            self.db_manager.execute_query(query, params)
+        # Продолжаем только если не в режиме просмотра
+        if not self.view_mode:
+            try:
+                query = """
+                INSERT INTO Тренера (Фамилия, Имя, Отчество, Доп_информация)
+                VALUES (%s, %s, %s, %s)
+                """
+                params = (surname, name, patronymic, info)
+                self.db_manager.execute_query(query, params)
 
-            # Показываем сообщение об успешном добавлении
-            QMessageBox.information(self, "Успех", "Тренер успешно добавлен!")
+                # Очищаем поля ввода
+                self.surname_coach.clear()
+                self.name_coach.clear()
+                self.otchestvo_coach.clear()
+                self.dopinfo_coach.clear()
 
-            # Очищаем поля ввода
-            self.surname_coach.clear()
-            self.name_coach.clear()
-            self.otchestvo_coach.clear()
-            self.dopinfo_coach.clear()
+                # Обновляем таблицу и закрываем окно
+                if self.parent():
+                    self.parent().load_trainers()
+                self.accept()
+                return True  # Возвращаем True при успешном добавлении
 
-            # Закрываем диалог и обновляем таблицу тренеров в главном окне
-            self.accept()
-            if self.parent():
-                self.parent().load_trainers()
-
-        except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось добавить тренера: {e}")
+            except Exception as e:
+                print(f"Произошла ошибка: {e}")
+                QMessageBox.critical(self, "Ошибка", f"Не удалось добавить тренера: {e}")
+                return False  # Возвращаем False при ошибке
 
     def closeEvent(self, event):
         if self.parent() and hasattr(self.parent(), "load_trainers"):
             self.parent().load_trainers()
         super().closeEvent(event)
     
+class EditCoachDialog(QDialog, Ui_EditCoach):
+    def __init__(self, db_manager, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)  # Задаём интерфейс через метод setupUi
+        self.db_manager = db_manager
+        self.current_coach_id = None
+
+        self.addbutton_coach.clicked.connect(self.save_coach_changes)
+        self.cancelbutton_coach.clicked.connect(self.reject)
+
+    def set_coach_data(self, coach_id, surname, name, patronymic, info):
+        self.current_coach_id = coach_id
+        self.surname_coach.setText(surname)
+        self.name_coach.setText(name)
+        self.otchestvo_coach.setText(patronymic)
+        self.dopinfo_coach.setPlainText(info)
+
+    def save_coach_changes(self):
+        # Получаем новые данные из полей
+        new_surname = self.surname_coach.text().strip()
+        new_name = self.name_coach.text().strip()
+        new_patronymic = self.otchestvo_coach.text().strip()
+        new_info = self.dopinfo_coach.toPlainText().strip()
+
+        # Проверяем обязательные поля
+        if not new_surname or not new_name:
+            QMessageBox.warning(self, "Ошибка", "Фамилия и Имя обязательны для заполнения!")
+            return
+
+        # Обновляем данные тренера
+        update_query = """
+        UPDATE Тренера SET Фамилия = %s, Имя = %s, Отчество = %s, Доп_информация = %s WHERE id_Тренера = %s
+        """
+        if self.db_manager.execute_query(update_query, (new_surname, new_name, new_patronymic, new_info, self.current_coach_id)):
+            self.accept()  # Закрыть диалоговое окно
+        else:
+            QMessageBox.warning(self, "Ошибка", "Не удалось обновить данные. Возможно, они не изменились.")
+
 class MainWindow(QDialog, Ui_Mainwindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -238,12 +287,14 @@ class MainWindow(QDialog, Ui_Mainwindow):
         if exit_button:
             exit_button.clicked.connect(self.confirm_exit)
 
+        self.tableWidget_tab3.doubleClicked.connect(self.on_trainer_double_click)
+
         self.addbutton_tab2.clicked.connect(self.open_create_tren_dialog)
         self.izmenbutton_tab2.clicked.connect(self.open_create_tren_dialog)
         self.delbutton_tab2.clicked.connect(self.del_tren_dialog)
 
         self.addbutton_tab3.clicked.connect(self.create_coach_dialog)
-        self.izmenbutton_tab3.clicked.connect(self.create_coach_dialog)
+        self.izmenbutton_tab3.clicked.connect(self.edit_coach)
         self.delbutton_tab3.clicked.connect(self.del_coach_dialog)
 
         self.addbutton_tab4.clicked.connect(self.create_sportman_dialog)
@@ -299,31 +350,94 @@ class MainWindow(QDialog, Ui_Mainwindow):
             self.tableWidget_tab3.setColumnCount(4)
             self.tableWidget_tab3.setHorizontalHeaderLabels(['Фамилия', 'Имя', 'Отчество', 'Дополнительная информация'])
 
+            self.tableWidget_tab3.setEditTriggers(QTableWidget.NoEditTriggers)
             self.tableWidget_tab3.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
             self.tableWidget_tab3.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+            self.tableWidget_tab3.setColumnWidth(0, 160)
+            self.tableWidget_tab3.setColumnWidth(1, 160)
+            self.tableWidget_tab3.setColumnWidth(2, 160)
             self.tableWidget_tab3.setColumnWidth(3, 300)
 
             for row_index, trainer in enumerate(trainers):
-                item = QTableWidgetItem(f'{str(trainer['Фамилия'])}')
-                self.tableWidget_tab3.setItem(row_index, 0, item)
-                self.tableWidget_tab3.setItem(row_index, 1, QTableWidgetItem(trainer['Имя']))
+                self.tableWidget_tab3.setItem(row_index, 1, QTableWidgetItem(trainer['Фамилия']))
+                self.tableWidget_tab3.setItem(row_index, 0, QTableWidgetItem(trainer['Имя']))
                 self.tableWidget_tab3.setItem(row_index, 2, QTableWidgetItem(trainer['Отчество']))
                 self.tableWidget_tab3.setItem(row_index, 3, QTableWidgetItem(trainer['Доп_информация']))
-
 
         except pymysql.Error as e:
             QMessageBox.critical(self, "Ошибка загрузки данных", f"Ошибка при обращении к базе данных: {e}")
         finally:
             if connection:
                 connection.close()
-                
+
+    def on_trainer_double_click(self, index):
+        row = index.row()
+
+        # Извлекаем данные из выбранной строки
+        surname = self.tableWidget_tab3.item(row, 1).text()
+        name = self.tableWidget_tab3.item(row, 0).text()
+        patronymic = self.tableWidget_tab3.item(row, 2).text()
+        info = self.tableWidget_tab3.item(row, 3).text()
+
+        # Открываем диалоговое окно для просмотра тренера
+        create_coach_dialog = CreateCoachDialog(self.db_manager, self, view_mode=True)
+        create_coach_dialog.surname_coach.setText(surname)
+        create_coach_dialog.name_coach.setText(name)
+        create_coach_dialog.otchestvo_coach.setText(patronymic)
+        create_coach_dialog.dopinfo_coach.setPlainText(info)
+        create_coach_dialog.exec_()
+
+    def edit_coach(self):
+        self.open_edit_coach_dialog()
+
+    def open_edit_coach_dialog(self):
+        selected_row = self.tableWidget_tab3.currentRow()
+        if selected_row == -1:
+            QMessageBox.warning(self, "Ошибка", "Выберите тренера для редактирования!")
+            return
+
+        surname = self.tableWidget_tab3.item(selected_row, 1).text()
+        name = self.tableWidget_tab3.item(selected_row, 0).text()
+        patronymic = self.tableWidget_tab3.item(selected_row, 2).text()
+        info = self.tableWidget_tab3.item(selected_row, 3).text()
+
+        edit_dialog = EditCoachDialog(self.db_manager, self)
+        edit_dialog.set_coach_data(self.get_coach_id(surname, name, patronymic), surname, name, patronymic, info)
+        edit_dialog.exec_()
+        if edit_dialog.result():
+            self.load_trainers()
+
+    def get_coach_id(self, surname, name, patronymic):
+        coach_id_query = "SELECT id_Тренера FROM Тренера WHERE Фамилия = %s AND Имя = %s AND Отчество = %s"
+        result = self.db_manager.execute_query(coach_id_query, (surname, name, patronymic), fetch=True)
+        if result:
+            return result[0]['id_Тренера']
+        return None
+    
+    def del_coach(self):
+        # Получаем ID тренера из текущего выбранного элемента таблицы
+        selected_row = self.tableWidget_tab3.currentRow()
+        if selected_row == -1:
+            QMessageBox.warning(self, "Ошибка", "Выберите тренера для удаления!")
+            return
+        else:
+            surname = self.tableWidget_tab3.item(selected_row, 1).text()
+            name = self.tableWidget_tab3.item(selected_row, 0).text()
+
+            query = "DELETE FROM Тренера WHERE Фамилия = %s AND Имя = %s"
+            params = (surname, name)
+            self.db_manager.execute_query(query, params)
+
+            # Обновляем таблицу после удаления
+            self.load_trainers()
+
     def del_coach_dialog(self):
         del_coach = QDialog(self)
         uic.loadUi('forms/delcoach.ui', del_coach)
         yes_button = del_coach.findChild(QtWidgets.QPushButton, "pushButton_2")
         no_button = del_coach.findChild(QtWidgets.QPushButton, "pushButton")
         if yes_button:
-            yes_button.clicked.connect(del_coach.close) ##Удаляет тренера из базы
+            yes_button.clicked.connect(lambda: (self.del_coach(), del_coach.close()))
         if no_button:
             no_button.clicked.connect(del_coach.close)
         del_coach.exec_()

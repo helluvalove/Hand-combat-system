@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>620</width>
+    <height>250</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>620</width>
+    <height>250</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>620</width>
+    <height>250</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Изменение данных тренера</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">#Dialog {
+background-color: #e0f0ff
+}
+</string>
+  </property>
+  <widget class="QPlainTextEdit" name="dopinfo_coach">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>70</y>
+     <width>581</width>
+     <height>121</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#dopinfo_coach {
+background-color: #FFFFFF;
+border-radius:5%;
+}</string>
+   </property>
+   <property name="maximumBlockCount">
+    <number>1</number>
+   </property>
+   <property name="backgroundVisible">
+    <bool>false</bool>
+   </property>
+   <property name="centerOnScroll">
+    <bool>false</bool>
+   </property>
+   <property name="placeholderText">
+    <string>Дополнительная информация о тренере</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="otchestvo_coach">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>30</y>
+     <width>180</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#otchestvo_coach {
+background-color: #FFFFFF;
+border-radius:5%;
+}</string>
+   </property>
+   <property name="placeholderText">
+    <string>Отчество</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="cancelbutton_coach">
+   <property name="geometry">
+    <rect>
+     <x>410</x>
+     <y>210</y>
+     <width>85</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#cancelbutton_coach {
+background-color: #b0c4de;
+border-radius:7%;
+border: 1px solid grey;
+font-family: Avenir Next;
+font-size: 16px;
+}
+
+#cancelbutton_coach:hover {
+background-color: #9db1cc
+}</string>
+   </property>
+   <property name="text">
+    <string>Отмена</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="name_coach">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>30</y>
+     <width>180</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#name_coach {
+background-color: #FFFFFF;
+border-radius:5%;
+}</string>
+   </property>
+   <property name="placeholderText">
+    <string>Фамилия</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="surname_coach">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>30</y>
+     <width>180</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#surname_coach {
+background-color: #FFFFFF;
+border-radius:5%;
+}</string>
+   </property>
+   <property name="placeholderText">
+    <string>Имя</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="addbutton_coach">
+   <property name="geometry">
+    <rect>
+     <x>515</x>
+     <y>210</y>
+     <width>85</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#addbutton_coach {
+background-color: #b0c4de;
+border-radius:7%;
+border: 1px solid grey;
+font-family: Avenir Next;
+font-size: 16px;
+}
+
+#addbutton_coach:hover {
+background-color: #71bc78
+}</string>
+   </property>
+   <property name="text">
+    <string>Добавить</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
