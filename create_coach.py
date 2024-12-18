@@ -17,7 +17,7 @@ class Ui_CreateCoach(object):
 "border-radius:5%;\n"
 "}")
         self.name_coach.setObjectName("name_coach")
-        self.name_coach.setMaxLength(25)
+        self.name_coach.setMaxLength(20)
         self.surname_coach = QtWidgets.QLineEdit(parent=Dialog)
         self.surname_coach.setGeometry(QtCore.QRect(220, 30, 180, 25))
         self.surname_coach.setStyleSheet("#surname_coach {\n"
@@ -25,7 +25,7 @@ class Ui_CreateCoach(object):
 "border-radius:5%;\n"
 "}")
         self.surname_coach.setObjectName("surname_coach")
-        self.surname_coach.setMaxLength(25)
+        self.surname_coach.setMaxLength(20)
         self.otchestvo_coach = QtWidgets.QLineEdit(parent=Dialog)
         self.otchestvo_coach.setGeometry(QtCore.QRect(420, 30, 180, 25))
         self.otchestvo_coach.setStyleSheet("#otchestvo_coach {\n"
@@ -33,6 +33,7 @@ class Ui_CreateCoach(object):
 "border-radius:5%;\n"
 "}")
         self.otchestvo_coach.setObjectName("otchestvo_coach")
+        self.otchestvo_coach.setMaxLength(20)
         self.dopinfo_coach = QtWidgets.QPlainTextEdit(parent=Dialog)
         self.dopinfo_coach.setGeometry(QtCore.QRect(20, 70, 581, 121))
         self.dopinfo_coach.setStyleSheet("#dopinfo_coach {\n"

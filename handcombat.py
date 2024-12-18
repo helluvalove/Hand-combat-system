@@ -353,10 +353,12 @@ class MainWindow(QDialog, Ui_Mainwindow):
             self.tableWidget_tab3.setEditTriggers(QTableWidget.NoEditTriggers)
             self.tableWidget_tab3.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
             self.tableWidget_tab3.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-            self.tableWidget_tab3.setColumnWidth(0, 160)
-            self.tableWidget_tab3.setColumnWidth(1, 160)
-            self.tableWidget_tab3.setColumnWidth(2, 160)
+            self.tableWidget_tab3.setColumnWidth(0, 180)
+            self.tableWidget_tab3.setColumnWidth(1, 180)
+            self.tableWidget_tab3.setColumnWidth(2, 180)
             self.tableWidget_tab3.setColumnWidth(3, 300)
+
+            self.tableWidget_tab3.setColumnHidden(3, True)
 
             for row_index, trainer in enumerate(trainers):
                 self.tableWidget_tab3.setItem(row_index, 1, QTableWidgetItem(trainer['Фамилия']))
