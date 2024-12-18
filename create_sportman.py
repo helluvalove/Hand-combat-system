@@ -31,6 +31,7 @@ class Ui_SportMan(object):
 "border-radius:5%;\n"
 "}")
         self.surname_sportman.setObjectName("surname_sportman")
+        self.surname_sportman.setMaxLength(20)
         self.cancelbutton_sportman = QtWidgets.QPushButton(parent=Dialog)
         self.cancelbutton_sportman.setGeometry(QtCore.QRect(410, 250, 85, 25))
         self.cancelbutton_sportman.setStyleSheet("#cancelbutton_sportman {\n"
@@ -52,6 +53,7 @@ class Ui_SportMan(object):
 "border-radius:5%;\n"
 "}")
         self.otchestvo_sportman.setObjectName("otchestvo_sportman")
+        self.otchestvo_sportman.setMaxLength(20)
         self.name_sportman = QtWidgets.QLineEdit(parent=Dialog)
         self.name_sportman.setGeometry(QtCore.QRect(20, 30, 180, 25))
         self.name_sportman.setStyleSheet("#name_sportman {\n"
@@ -59,6 +61,7 @@ class Ui_SportMan(object):
 "border-radius:5%;\n"
 "}")
         self.name_sportman.setObjectName("name_sportman")
+        self.name_sportman.setMaxLength(20)
         self.grupaBox_sportman = QtWidgets.QComboBox(parent=Dialog)
         self.grupaBox_sportman.setGeometry(QtCore.QRect(20, 90, 151, 26))
         self.grupaBox_sportman.setEditable(False)

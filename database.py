@@ -27,21 +27,20 @@ class DatabaseManager:
             raise
 
     def execute_query(self, query, params=None, fetch=False):
-        connection = self.connect_to_db()
-        if not connection:
-            return False
         try:
+            connection = self.connect_to_db()
             with connection.cursor() as cursor:
                 cursor.execute(query, params or ())
-                if fetch:
-                    return cursor.fetchall()
-                connection.commit()
+                if fetch:  # Если нужно извлечь данные
+                    result = cursor.fetchall()
+                    connection.close()
+                    return result  # Возвращаем результаты запроса
+                connection.commit()  # Для операций INSERT/UPDATE/DELETE
+                connection.close()
                 return True
         except Exception as e:
             logger.error(f"Ошибка выполнения запроса: {e}")
-            return False
-        finally:
-            connection.close()
+            return None  # Возвращаем None, чтобы явно показать ошибку
 
     def insert_trainer(self, surname, name, patronymic, info):
         query = """
