@@ -148,8 +148,8 @@ class CreateSportMan(QDialog, Ui_SportMan):
         self.datebirth_sportman.setCalendarPopup(True)
 
     def add_sportman_to_db(self):
-        name = self.name_sportman.text().strip()
-        surname = self.surname_sportman.text().strip()
+        surname = self.name_sportman.text().strip()
+        name = self.surname_sportman.text().strip()
         otchestvo = self.otchestvo_sportman.text().strip()
         grupa = self.grupaBox_sportman.currentText().strip()
         datebirth = self.datebirth_sportman.date().toString("yyyy-MM-dd")
@@ -299,7 +299,7 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
 
     def load_trainers(self):
         try:
-            query = "SELECT id_Тренера, CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО FROM Тренера"
+            query = "SELECT id_Тренера, CONCAT(Имя, ' ', Фамилия, ' ', Отчество) as ФИО FROM Тренера"
             trainers = self.db_manager.execute_query(query, fetch=True)
             
             self.comboBox_trener.clear()
@@ -471,8 +471,8 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
                 self.add_button.setEnabled(False)  # Блокируем кнопку "Добавить"
 
     def add_coach_to_db(self):
-        surname = self.surname_coach.text().strip()
-        name = self.name_coach.text().strip()
+        name = self.surname_coach.text().strip()
+        surname = self.name_coach.text().strip()
         patronymic = self.otchestvo_coach.text().strip()
         info = self.dopinfo_coach.toPlainText().strip()
         number = ''.join(filter(str.isdigit, self.number_coach.text()))
@@ -818,8 +818,8 @@ class MainWindow(QDialog, Ui_Mainwindow):
                 id_item = QTableWidgetItem(str(trainer['id_Тренера']))
                 self.tableWidget_tab3.setItem(row_index, 5, id_item)
                 # Остальные данные
-                self.tableWidget_tab3.setItem(row_index, 1, QTableWidgetItem(trainer['Фамилия']))
-                self.tableWidget_tab3.setItem(row_index, 0, QTableWidgetItem(trainer['Имя']))
+                self.tableWidget_tab3.setItem(row_index, 0, QTableWidgetItem(trainer['Фамилия']))
+                self.tableWidget_tab3.setItem(row_index, 1, QTableWidgetItem(trainer['Имя']))
                 self.tableWidget_tab3.setItem(row_index, 2, QTableWidgetItem(trainer['Отчество']))
                 self.tableWidget_tab3.setItem(row_index, 3, QTableWidgetItem(trainer['Доп_информация']))
                 formatted_phone = self.format_phone_number(trainer['Телефон'])
@@ -898,15 +898,40 @@ class MainWindow(QDialog, Ui_Mainwindow):
             QMessageBox.warning(self, "Ошибка", "Выберите тренера для удаления!")
             return
 
-        # Получаем ID тренера из первой (скрытой) колонки
+        # Получаем ID тренера
         coach_id = int(self.tableWidget_tab3.item(selected_row, 5).text())
         
-        # Используем ID для удаления
-        query = "DELETE FROM Тренера WHERE id_Тренера = %s"
-        self.db_manager.execute_query(query, (coach_id,))
-        
-        # Обновляем таблицу
-        self.load_trainers()
+        try:
+            # Проверяем, есть ли группы у тренера
+            check_query = """
+            SELECT Название 
+            FROM Группы 
+            WHERE id_Тренера = %s
+            """
+            result = self.db_manager.execute_query(check_query, (coach_id,), fetch=True)
+            
+            if result:
+                # Формируем список групп для сообщения
+                groups = [group['Название'] for group in result]
+                groups_str = "\n- ".join(groups)
+                
+                QMessageBox.warning(
+                    self, 
+                    "Невозможно удалить тренера",
+                    f"Этот тренер не может быть удален, так как он тренирует следующие группы:\n- {groups_str}\n\n"
+                    "Пожалуйста, назначьте другого тренера этим группам перед удалением."
+                )
+                return
+
+            # Если групп нет, удаляем тренера
+            delete_query = "DELETE FROM Тренера WHERE id_Тренера = %s"
+            self.db_manager.execute_query(delete_query, (coach_id,))
+            
+            # Обновляем таблицу
+            self.load_trainers()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось выполнить операцию: {e}")
 
     def del_coach_dialog(self):
         del_coach = QDialog(self)
@@ -990,8 +1015,8 @@ class MainWindow(QDialog, Ui_Mainwindow):
             self.tableWidget_tab4.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 
             for row_index, sportman in enumerate(sportmen):
-                self.tableWidget_tab4.setItem(row_index, 1, QTableWidgetItem(sportman['Фамилия']))
-                self.tableWidget_tab4.setItem(row_index, 0, QTableWidgetItem(sportman['Имя']))
+                self.tableWidget_tab4.setItem(row_index, 0, QTableWidgetItem(sportman['Фамилия']))
+                self.tableWidget_tab4.setItem(row_index, 1, QTableWidgetItem(sportman['Имя']))
                 self.tableWidget_tab4.setItem(row_index, 2, QTableWidgetItem(sportman['Отчество']))
                 self.tableWidget_tab4.setItem(row_index, 3, QTableWidgetItem(sportman['Группа']))
                 self.tableWidget_tab4.setItem(row_index, 4, QTableWidgetItem(sportman['Дата_рождения'].strftime('%d.%m.%Y')))
