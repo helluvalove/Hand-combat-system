@@ -1,7 +1,7 @@
 import sys
 import pymysql
 import os 
-from PyQt5 import QtWidgets, QtGui, uic
+from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtCore import QRegExp, QDate, Qt
 from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton, QTableWidgetItem, QHeaderView, QTableWidget
@@ -439,10 +439,24 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
         self.setupUi(self)  # Задаём интерфейс через метод setupUi
         self.db_manager = db_manager
         self.view_mode = view_mode
-
-        # Подключаем обработчики событий
+                
         self.addbutton_coach.clicked.connect(self.add_coach_to_db)
         self.cancelbutton_coach.clicked.connect(self.reject)
+        
+        self.number_coach.setPlaceholderText("Номер телефона")
+        self.number_coach.setInputMask("")
+
+        self.number_coach.textEdited.connect(self.apply_input_mask)
+        self.number_coach.cursorPositionChanged.connect(self.adjust_cursor_position)
+
+    def apply_input_mask(self):
+        if not self.number_coach.inputMask():  
+            self.number_coach.setInputMask('+7(999) 999-99-99')
+            self.number_coach.setCursorPosition(4) 
+
+    def adjust_cursor_position(self):
+        if self.number_coach.cursorPosition() < 4:
+            self.number_coach.setCursorPosition(4)
 
         if self.view_mode:
             # Блокируем поля для редактирования и кнопку "Добавить"
@@ -450,48 +464,71 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
             self.name_coach.setReadOnly(True)
             self.otchestvo_coach.setReadOnly(True)
             self.dopinfo_coach.setReadOnly(True)
+            self.number_coach.setReadOnly(True)
+
             self.add_button = self.findChild(QPushButton, "addbutton_coach")
             if self.add_button:
                 self.add_button.setEnabled(False)  # Блокируем кнопку "Добавить"
 
     def add_coach_to_db(self):
-        # Получаем данные из полей ввода
         surname = self.surname_coach.text().strip()
         name = self.name_coach.text().strip()
         patronymic = self.otchestvo_coach.text().strip()
         info = self.dopinfo_coach.toPlainText().strip()
+        number = ''.join(filter(str.isdigit, self.number_coach.text()))
+        
+        if number:
+            number = f'+7{number[1:]}' if number.startswith('7') else f'+7{number}'
 
-        # Проверяем обязательные поля
         if not surname or not name:
             QMessageBox.warning(self, "Ошибка", "Фамилия и Имя обязательны для заполнения!")
-            return False  # Возвращаем False если проверка не пройдена
+            return False
 
-        # Продолжаем только если не в режиме просмотра
+        # Check for duplicate full name
+        check_name_query = """
+        SELECT COUNT(*) as count FROM Тренера 
+        WHERE Фамилия = %s AND Имя = %s AND Отчество = %s
+        """
+        result = self.db_manager.execute_query(check_name_query, (surname, name, patronymic), fetch=True)
+        
+        if result and result[0]['count'] > 0:
+            QMessageBox.warning(self, "Ошибка", "Тренер с таким ФИО уже существует!")
+            return False
+
+        # Check for duplicate phone number
+        if number:
+            check_phone_query = "SELECT COUNT(*) as count FROM Тренера WHERE Телефон = %s"
+            result = self.db_manager.execute_query(check_phone_query, (number,), fetch=True)
+            
+            if result and result[0]['count'] > 0:
+                QMessageBox.warning(self, "Ошибка", "Тренер с таким номером телефона уже существует!")
+                return False
+
         if not self.view_mode:
-            try:
+            try:  
                 query = """
-                INSERT INTO Тренера (Фамилия, Имя, Отчество, Доп_информация)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO Тренера (Фамилия, Имя, Отчество, Доп_информация, Телефон)
+                VALUES (%s, %s, %s, %s, %s)
                 """
-                params = (surname, name, patronymic, info)
+                params = (surname, name, patronymic, info, number)
                 self.db_manager.execute_query(query, params)
 
-                # Очищаем поля ввода
+                # Clear the form after successful addition
                 self.surname_coach.clear()
                 self.name_coach.clear()
                 self.otchestvo_coach.clear()
                 self.dopinfo_coach.clear()
+                self.number_coach.clear()
 
-                # Обновляем таблицу и закрываем окно
                 if self.parent():
                     self.parent().load_trainers()
                 self.accept()
-                return True  # Возвращаем True при успешном добавлении
+                return True
 
             except Exception as e:
                 print(f"Произошла ошибка: {e}")
                 QMessageBox.critical(self, "Ошибка", f"Не удалось добавить тренера: {e}")
-                return False  # Возвращаем False при ошибке
+                return False
 
     def closeEvent(self, event):
         if self.parent() and hasattr(self.parent(), "load_trainers"):
@@ -508,31 +545,81 @@ class EditCoachDialog(QDialog, Ui_EditCoach):
         self.addbutton_coach.clicked.connect(self.save_coach_changes)
         self.cancelbutton_coach.clicked.connect(self.reject)
 
-    def set_coach_data(self, coach_id, surname, name, patronymic, info):
+        self.number_coach.setPlaceholderText("Номер телефона")
+        self.number_coach.setInputMask("")
+
+        self.number_coach.textEdited.connect(self.apply_input_mask)
+        self.number_coach.cursorPositionChanged.connect(self.adjust_cursor_position)
+
+    def apply_input_mask(self):
+        if not self.number_coach.inputMask():  
+            self.number_coach.setInputMask('+7(999) 999-99-99')
+            self.number_coach.setCursorPosition(3) 
+
+    def adjust_cursor_position(self):
+        if self.number_coach.cursorPosition() < 3:
+            self.number_coach.setCursorPosition(3)
+
+    def set_coach_data(self, coach_id, surname, name, patronymic, info, number):
         self.current_coach_id = coach_id
         self.surname_coach.setText(surname)
         self.name_coach.setText(name)
         self.otchestvo_coach.setText(patronymic)
         self.dopinfo_coach.setPlainText(info)
+        self.number_coach.setText(number)
 
     def save_coach_changes(self):
-        # Получаем новые данные из полей
         new_surname = self.surname_coach.text().strip()
         new_name = self.name_coach.text().strip()
         new_patronymic = self.otchestvo_coach.text().strip()
         new_info = self.dopinfo_coach.toPlainText().strip()
+        
+        raw_number = ''.join(filter(str.isdigit, self.number_coach.text()))
+        if raw_number:
+            if raw_number.startswith('7'):
+                raw_number = raw_number[1:]
+            new_number = f'+7{raw_number}'
+        else:
+            new_number = ''
 
-        # Проверяем обязательные поля
         if not new_surname or not new_name:
             QMessageBox.warning(self, "Ошибка", "Фамилия и Имя обязательны для заполнения!")
             return
 
-        # Обновляем данные тренера
-        update_query = """
-        UPDATE Тренера SET Фамилия = %s, Имя = %s, Отчество = %s, Доп_информация = %s WHERE id_Тренера = %s
+        # Check for duplicate full name
+        check_name_query = """
+        SELECT COUNT(*) as count FROM Тренера 
+        WHERE Фамилия = %s AND Имя = %s AND Отчество = %s 
+        AND id_Тренера != %s
         """
-        if self.db_manager.execute_query(update_query, (new_surname, new_name, new_patronymic, new_info, self.current_coach_id)):
-            self.accept()  # Закрыть диалоговое окно
+        result = self.db_manager.execute_query(check_name_query, 
+            (new_surname, new_name, new_patronymic, self.current_coach_id), fetch=True)
+        
+        if result and result[0]['count'] > 0:
+            QMessageBox.warning(self, "Ошибка", "Тренер с таким ФИО уже существует!")
+            return
+
+        # Check for duplicate phone number
+        if new_number:
+            check_phone_query = """
+            SELECT COUNT(*) as count FROM Тренера 
+            WHERE Телефон = %s AND id_Тренера != %s
+            """
+            result = self.db_manager.execute_query(check_phone_query, 
+                (new_number, self.current_coach_id), fetch=True)
+            
+            if result and result[0]['count'] > 0:
+                QMessageBox.warning(self, "Ошибка", "Тренер с таким номером телефона уже существует!")
+                return
+
+        update_query = """
+        UPDATE Тренера 
+        SET Фамилия = %s, Имя = %s, Отчество = %s, Доп_информация = %s, Телефон = %s 
+        WHERE id_Тренера = %s
+        """
+        
+        if self.db_manager.execute_query(update_query, (new_surname, new_name, new_patronymic, new_info, new_number, self.current_coach_id)):
+            self.accept()
         else:
             QMessageBox.warning(self, "Ошибка", "Не удалось обновить данные. Возможно, они не изменились.")
 
@@ -593,10 +680,76 @@ class MainWindow(QDialog, Ui_Mainwindow):
 
         self.clearbutton_tab6.clicked.connect(self.del_otchet_dialog)
 
+        # Поиск для тренеров
+        self.search_coach = QtWidgets.QLineEdit(self.tab_6)  # Привязываем к вкладке тренеров
+        self.search_coach.setGeometry(QtCore.QRect(900, 20, 200, 30))
+        self.search_coach.setPlaceholderText("Поиск тренера...")
+        self.search_coach.textChanged.connect(self.search_coaches)
+        self.search_coach.setMaxLength(20)
+
+        # Поиск для спортсменов
+        self.search_sportsman = QtWidgets.QLineEdit(self.tab_5)  # Привязываем к вкладке спортсменов
+        self.search_sportsman.setGeometry(QtCore.QRect(900, 20, 200, 30))
+        self.search_sportsman.setPlaceholderText("Поиск спортсмена...")
+        self.search_sportsman.textChanged.connect(self.search_sportsmen)
+        self.search_sportsman.setMaxLength(20)
+
+        # Поиск для групп
+        self.search_group = QtWidgets.QLineEdit(self.tab)  # Привязываем к вкладке групп
+        self.search_group.setGeometry(QtCore.QRect(900, 20, 200, 30))
+        self.search_group.setPlaceholderText("Поиск группы...")
+        self.search_group.textChanged.connect(self.search_groups)
+        self.search_group.setMaxLength(20)
+
+        search_style = """
+            QLineEdit {
+                background-color: white;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 5px;
+            }
+        """
+        self.search_coach.setStyleSheet(search_style)
+        self.search_sportsman.setStyleSheet(search_style)
+        self.search_group.setStyleSheet(search_style)
+
         self.login_window = LoginSystem()
         if self.login_window.exec_() != QDialog.Accepted:
             return  
         self.show()
+
+    def search_coaches(self):
+        search_text = self.search_coach.text().lower()
+        for row in range(self.tableWidget_tab3.rowCount()):
+            show_row = False
+            for col in range(self.tableWidget_tab3.columnCount()):
+                item = self.tableWidget_tab3.item(row, col)
+                if item and search_text in item.text().lower():
+                    show_row = True
+                    break
+            self.tableWidget_tab3.setRowHidden(row, not show_row)
+
+    def search_sportsmen(self):
+        search_text = self.search_sportsman.text().lower()
+        for row in range(self.tableWidget_tab4.rowCount()):
+            show_row = False
+            for col in range(self.tableWidget_tab4.columnCount()):
+                item = self.tableWidget_tab4.item(row, col)
+                if item and search_text in item.text().lower():
+                    show_row = True
+                    break
+            self.tableWidget_tab4.setRowHidden(row, not show_row)
+
+    def search_groups(self):
+        search_text = self.search_group.text().lower()
+        for row in range(self.tableWidget_tab5.rowCount()):
+            show_row = False
+            for col in range(self.tableWidget_tab5.columnCount()):
+                item = self.tableWidget_tab5.item(row, col)
+                if item and search_text in item.text().lower():
+                    show_row = True
+                    break
+            self.tableWidget_tab5.setRowHidden(row, not show_row)
 
     def open_create_tren_dialog(self):
         create_tren_dialog = CreateTren(self)
@@ -618,6 +771,14 @@ class MainWindow(QDialog, Ui_Mainwindow):
         if create_coach_dialog.exec_():
             self.load_trainers()
 
+    def format_phone_number(self, phone):
+        if phone and len(phone) >= 11:
+            # Убираем все нецифровые символы
+            digits = ''.join(filter(str.isdigit, phone))
+            # Форматируем номер
+            return f'+7 ({digits[1:4]}) {digits[4:7]}-{digits[7:9]}-{digits[9:11]}'
+        return phone
+
     def load_trainers(self):
         try:
             connection = connect_to_db()
@@ -626,15 +787,15 @@ class MainWindow(QDialog, Ui_Mainwindow):
                 return
 
             with connection.cursor(pymysql.cursors.DictCursor) as cursor:
-                query = "SELECT Фамилия, Имя, Отчество, Доп_информация FROM Тренера"
+                query = "SELECT id_Тренера, Фамилия, Имя, Отчество, Доп_информация, Телефон FROM Тренера"
                 cursor.execute(query)
                 trainers = cursor.fetchall()
 
             # Очищаем таблицу
             self.tableWidget_tab3.clearContents()
             self.tableWidget_tab3.setRowCount(len(trainers))
-            self.tableWidget_tab3.setColumnCount(4)
-            self.tableWidget_tab3.setHorizontalHeaderLabels(['Фамилия', 'Имя', 'Отчество', 'Дополнительная информация'])
+            self.tableWidget_tab3.setColumnCount(6)
+            self.tableWidget_tab3.setHorizontalHeaderLabels(['Фамилия', 'Имя', 'Отчество', 'Дополнительная информация', 'Телефон'])
 
             self.tableWidget_tab3.setEditTriggers(QTableWidget.NoEditTriggers)
             self.tableWidget_tab3.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
@@ -643,18 +804,27 @@ class MainWindow(QDialog, Ui_Mainwindow):
             self.tableWidget_tab3.setColumnWidth(1, 180)
             self.tableWidget_tab3.setColumnWidth(2, 180)
             self.tableWidget_tab3.setColumnWidth(3, 300)
+            self.tableWidget_tab3.setColumnWidth(4, 170)
 
             self.tableWidget_tab3.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows) 
             self.tableWidget_tab3.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 
             self.tableWidget_tab3.setColumnHidden(3, True)
+            self.tableWidget_tab3.setColumnHidden(5, True)
+
 
             for row_index, trainer in enumerate(trainers):
+                # Сохраняем ID как данные ячейки
+                id_item = QTableWidgetItem(str(trainer['id_Тренера']))
+                self.tableWidget_tab3.setItem(row_index, 5, id_item)
+                # Остальные данные
                 self.tableWidget_tab3.setItem(row_index, 1, QTableWidgetItem(trainer['Фамилия']))
                 self.tableWidget_tab3.setItem(row_index, 0, QTableWidgetItem(trainer['Имя']))
                 self.tableWidget_tab3.setItem(row_index, 2, QTableWidgetItem(trainer['Отчество']))
                 self.tableWidget_tab3.setItem(row_index, 3, QTableWidgetItem(trainer['Доп_информация']))
-
+                formatted_phone = self.format_phone_number(trainer['Телефон'])
+                self.tableWidget_tab3.setItem(row_index, 4, QTableWidgetItem(formatted_phone))
+                
         except pymysql.Error as e:
             QMessageBox.critical(self, "Ошибка загрузки данных", f"Ошибка при обращении к базе данных: {e}")
         finally:
@@ -669,6 +839,7 @@ class MainWindow(QDialog, Ui_Mainwindow):
         name = self.tableWidget_tab3.item(row, 0).text()
         patronymic = self.tableWidget_tab3.item(row, 2).text()
         info = self.tableWidget_tab3.item(row, 3).text()
+        number = self.tableWidget_tab3.item(row, 4).text()
 
         # Открываем диалоговое окно для просмотра тренера
         create_coach_dialog = CreateCoachDialog(self.db_manager, self, view_mode=True)
@@ -676,6 +847,21 @@ class MainWindow(QDialog, Ui_Mainwindow):
         create_coach_dialog.name_coach.setText(name)
         create_coach_dialog.otchestvo_coach.setText(patronymic)
         create_coach_dialog.dopinfo_coach.setPlainText(info)
+        
+        # Устанавливаем маску только если есть номер
+        if number and number != '+7() --':
+            create_coach_dialog.number_coach.setInputMask('+7 (999) 999-99-99')
+            create_coach_dialog.number_coach.setText(number)
+        else:
+            create_coach_dialog.number_coach.setInputMask('')
+            create_coach_dialog.number_coach.setText('')
+        
+        create_coach_dialog.surname_coach.setReadOnly(True)
+        create_coach_dialog.name_coach.setReadOnly(True)
+        create_coach_dialog.otchestvo_coach.setReadOnly(True)
+        create_coach_dialog.dopinfo_coach.setReadOnly(True)
+        create_coach_dialog.number_coach.setReadOnly(True)
+        create_coach_dialog.addbutton_coach.setEnabled(False)
         create_coach_dialog.exec_()
 
     def edit_coach(self):
@@ -691,9 +877,10 @@ class MainWindow(QDialog, Ui_Mainwindow):
         name = self.tableWidget_tab3.item(selected_row, 0).text()
         patronymic = self.tableWidget_tab3.item(selected_row, 2).text()
         info = self.tableWidget_tab3.item(selected_row, 3).text()
+        number = self.tableWidget_tab3.item(selected_row, 4).text()
 
         edit_dialog = EditCoachDialog(self.db_manager, self)
-        edit_dialog.set_coach_data(self.get_coach_id(surname, name, patronymic), surname, name, patronymic, info)
+        edit_dialog.set_coach_data(self.get_coach_id(surname, name, patronymic), surname, name, patronymic, info, number)
         edit_dialog.exec_()
         if edit_dialog.result():
             self.load_trainers()
@@ -706,21 +893,20 @@ class MainWindow(QDialog, Ui_Mainwindow):
         return None
     
     def del_coach(self):
-        # Получаем ID тренера из текущего выбранного элемента таблицы
         selected_row = self.tableWidget_tab3.currentRow()
         if selected_row == -1:
             QMessageBox.warning(self, "Ошибка", "Выберите тренера для удаления!")
             return
-        else:
-            surname = self.tableWidget_tab3.item(selected_row, 1).text()
-            name = self.tableWidget_tab3.item(selected_row, 0).text()
 
-            query = "DELETE FROM Тренера WHERE Фамилия = %s AND Имя = %s"
-            params = (surname, name)
-            self.db_manager.execute_query(query, params)
-
-            # Обновляем таблицу после удаления
-            self.load_trainers()
+        # Получаем ID тренера из первой (скрытой) колонки
+        coach_id = int(self.tableWidget_tab3.item(selected_row, 5).text())
+        
+        # Используем ID для удаления
+        query = "DELETE FROM Тренера WHERE id_Тренера = %s"
+        self.db_manager.execute_query(query, (coach_id,))
+        
+        # Обновляем таблицу
+        self.load_trainers()
 
     def del_coach_dialog(self):
         del_coach = QDialog(self)

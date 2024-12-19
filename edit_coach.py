@@ -4,15 +4,15 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_EditCoach(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(620, 250)
-        Dialog.setMinimumSize(QtCore.QSize(620, 250))
-        Dialog.setMaximumSize(QtCore.QSize(620, 250))
+        Dialog.resize(620, 295)
+        Dialog.setMinimumSize(QtCore.QSize(620, 295))
+        Dialog.setMaximumSize(QtCore.QSize(620, 295))
         Dialog.setStyleSheet("#Dialog {\n"
 "background-color: #e0f0ff\n"
 "}\n"
 "")
         self.dopinfo_coach = QtWidgets.QPlainTextEdit(parent=Dialog)
-        self.dopinfo_coach.setGeometry(QtCore.QRect(20, 70, 581, 121))
+        self.dopinfo_coach.setGeometry(QtCore.QRect(20, 110, 581, 121))
         self.dopinfo_coach.setStyleSheet("#dopinfo_coach {\n"
 "background-color: #FFFFFF;\n"
 "border-radius:5%;\n"
@@ -30,7 +30,7 @@ class Ui_EditCoach(object):
         self.otchestvo_coach.setObjectName("otchestvo_coach")
         self.otchestvo_coach.setMaxLength(20)
         self.cancelbutton_coach = QtWidgets.QPushButton(parent=Dialog)
-        self.cancelbutton_coach.setGeometry(QtCore.QRect(410, 210, 85, 25))
+        self.cancelbutton_coach.setGeometry(QtCore.QRect(410, 250, 85, 25))
         self.cancelbutton_coach.setStyleSheet("#cancelbutton_coach {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
@@ -60,7 +60,7 @@ class Ui_EditCoach(object):
         self.surname_coach.setObjectName("surname_coach")
         self.surname_coach.setMaxLength(20)
         self.addbutton_coach = QtWidgets.QPushButton(parent=Dialog)
-        self.addbutton_coach.setGeometry(QtCore.QRect(515, 210, 85, 25))
+        self.addbutton_coach.setGeometry(QtCore.QRect(515, 250, 85, 25))
         self.addbutton_coach.setStyleSheet("#addbutton_coach {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
@@ -73,6 +73,14 @@ class Ui_EditCoach(object):
 "background-color: #71bc78\n"
 "}")
         self.addbutton_coach.setObjectName("addbutton_coach")
+        self.number_coach = QtWidgets.QLineEdit(parent=Dialog)
+        self.number_coach.setGeometry(QtCore.QRect(20, 70, 180, 25))
+        self.number_coach.setStyleSheet("#number_coach {\n"
+"background-color: #FFFFFF;\n"
+"border-radius:5%;\n"
+"}")
+        self.number_coach.setMaxLength(20)
+        self.number_coach.setObjectName("number_coach")
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -85,4 +93,5 @@ class Ui_EditCoach(object):
         self.cancelbutton_coach.setText(_translate("Dialog", "Отмена"))
         self.name_coach.setPlaceholderText(_translate("Dialog", "Фамилия"))
         self.surname_coach.setPlaceholderText(_translate("Dialog", "Имя"))
-        self.addbutton_coach.setText(_translate("Dialog", "Сохранить"))
+        self.addbutton_coach.setText(_translate("Dialog", "Добавить"))
+        self.number_coach.setPlaceholderText(_translate("Dialog", "+7 (XXX) XXX-XX-XX"))
