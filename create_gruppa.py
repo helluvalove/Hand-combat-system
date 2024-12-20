@@ -27,13 +27,13 @@ class Ui_CreateGruppa(object):
 "font-size: 16px;\n"
 "}")
         self.label.setObjectName("label")
-        self.listWidget_spotsmans = QtWidgets.QListWidget(parent=Dialog)
-        self.listWidget_spotsmans.setGeometry(QtCore.QRect(30, 140, 535, 211))
-        self.listWidget_spotsmans.setStyleSheet("")
-        self.listWidget_spotsmans.setObjectName("listWidget_spotsmans")
-        self.lineEdit = QtWidgets.QLineEdit(parent=Dialog)
-        self.lineEdit.setGeometry(QtCore.QRect(400, 150, 151, 21))
-        self.lineEdit.setObjectName("lineEdit")
+        self.tableWidget = QtWidgets.QTableWidget(parent=Dialog)
+        self.tableWidget.setGeometry(QtCore.QRect(30, 150, 535, 200))
+        self.tableWidget.setStyleSheet("#tableWidget {\n"
+"background-color: #FFFFFF;\n"
+"border: 1px solid grey;\n"
+"}")
+        self.tableWidget.setObjectName("tableWidget")
         self.cancelbutton_grupa = QtWidgets.QPushButton(parent=Dialog)
         self.cancelbutton_grupa.setGeometry(QtCore.QRect(370, 370, 85, 25))
         self.cancelbutton_grupa.setStyleSheet("#cancelbutton_grupa {\n"
@@ -71,6 +71,5 @@ class Ui_CreateGruppa(object):
         Dialog.setWindowTitle(_translate("Dialog", "Создание группы"))
         self.name_grupa.setPlaceholderText(_translate("Dialog", "Название группы"))
         self.label.setText(_translate("Dialog", "Тренер:"))
-        self.lineEdit.setPlaceholderText(_translate("Dialog", "Поиск..."))
         self.cancelbutton_grupa.setText(_translate("Dialog", "Отмена"))
         self.addbutton_grupa.setText(_translate("Dialog", "Создать"))

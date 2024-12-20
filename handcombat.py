@@ -1,13 +1,13 @@
 import sys
 import pymysql
-import os 
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from PyQt5.QtCore import QRegExp, QDate, Qt
 from PyQt5.QtGui import QRegExpValidator
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton, QTableWidgetItem, QHeaderView, QTableWidget
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton, QTableWidgetItem, QHeaderView, QTableWidget, QAbstractItemView
 from database import DatabaseManager
 from newmainwindow import Ui_Mainwindow
 from createtren import Ui_Createtren
+from edit_tren import Ui_EditTren
 from create_sportman import Ui_SportMan
 from create_gruppa import Ui_CreateGruppa
 from create_coach import Ui_CreateCoach
@@ -97,11 +97,212 @@ class LoginSystem(QDialog):
         logout_dialog.exec_()
         self.close()
 
-class CreateTren(QDialog):
-    def __init__(self, parent=None):
+class CreateTren(QDialog, Ui_Createtren):
+    def __init__(self, db_manager, parent=None):
         super().__init__(parent)
-        self.ui = Ui_Createtren()
-        self.ui.setupUi(self)
+        self.setupUi(self)
+        self.db_manager = db_manager
+
+        # Настраиваем виджеты
+        self.setup_widgets()
+        
+        # Загружаем данные в комбобоксы
+        self.load_trainers()
+        self.load_groups()
+        
+        # Подключаем сигналы
+        self.addbutton_soztren.clicked.connect(self.add_training)
+        self.cancelbutton_soztren.clicked.connect(self.reject)
+    
+    def refresh_groups(self):
+        self.load_groups()
+        if hasattr(self, 'trenerBox_soztren') and self.trenerBox_soztren.currentText() != "Выберите тренера":
+            self.update_groups_for_trainer(self.trenerBox_soztren.currentText())
+
+    def setup_widgets(self):
+        # Настройка QDateTimeEdit
+        current_datetime = QtCore.QDateTime.currentDateTime()
+        self.dateTimeEdit_soztren.setDateTime(current_datetime)
+        self.dateTimeEdit_soztren.setMinimumDateTime(current_datetime)
+        self.dateTimeEdit_soztren.setCalendarPopup(True)
+
+    def load_trainers(self):
+        query = """
+        SELECT DISTINCT т.id_Тренера, CONCAT(т.Фамилия, ' ', т.Имя, ' ', т.Отчество) as ФИО 
+        FROM Тренера т
+        INNER JOIN Группы г ON т.id_Тренера = г.id_Тренера
+        """
+        trainers = self.db_manager.execute_query(query, fetch=True)
+        
+        self.trenerBox_soztren.clear()
+        self.trenerBox_soztren.addItem("Выберите тренера")
+        
+        self.trainer_ids = {}
+        for trainer in trainers:
+            self.trenerBox_soztren.addItem(trainer['ФИО'])
+            self.trainer_ids[trainer['ФИО']] = trainer['id_Тренера']
+
+        # Connect signal to slot
+        self.trenerBox_soztren.currentTextChanged.connect(self.update_groups_for_trainer)
+
+    def update_groups_for_trainer(self, trainer_name):
+        if not trainer_name or trainer_name == "Выберите тренера":
+            self.grupaBox_soztren.clear()
+            return
+        
+        trainer_id = self.trainer_ids[trainer_name]
+        query = """
+        SELECT id_Группы, Название
+        FROM Группы
+        WHERE id_Тренера = %s
+        """
+        groups = self.db_manager.execute_query(query, (trainer_id,), fetch=True)
+        
+        self.grupaBox_soztren.clear()
+        self.group_ids = {}
+        for group in groups:
+            self.grupaBox_soztren.addItem(group['Название'])
+            self.group_ids[group['Название']] = group['id_Группы']
+
+    def load_groups(self):
+        try:
+            query = """
+            SELECT г.id_Группы, г.Название, CONCAT(т.Фамилия, ' ', т.Имя, ' ', т.Отчество) as Тренер
+            FROM Группы г
+            JOIN Тренера т ON г.id_Тренера = т.id_Тренера
+            """
+            groups = self.db_manager.execute_query(query, fetch=True)
+            
+            self.grupaBox_soztren.clear()
+            self.grupaBox_soztren.addItem("Выберите группу")
+            
+            self.group_ids = {}
+            for group in groups:
+                display_text = f"{group['Название']}"
+                self.grupaBox_soztren.addItem(display_text)
+                self.group_ids[display_text] = group['id_Группы']
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить список групп: {e}")
+
+    def add_training(self):
+        name = self.name_tren.text().strip()
+        trainer = self.trenerBox_soztren.currentText()
+        group = self.grupaBox_soztren.currentText()
+        datetime = self.dateTimeEdit_soztren.dateTime().toString("yyyy-MM-dd HH:mm:ss")
+
+        if not name or trainer == "Выберите тренера" or not group:
+            QMessageBox.warning(self, "Ошибка", "Заполните все поля!")
+            return
+
+        try:
+            trainer_id = self.trainer_ids[trainer]
+            group_id = self.group_ids[group]
+            
+            query = """
+            INSERT INTO Расписание_тренировок (Название, id_Тренера, id_Группы, Дата_время)
+            VALUES (%s, %s, %s, %s)
+            """
+            self.db_manager.execute_query(query, (name, trainer_id, group_id, datetime))
+            
+            QMessageBox.information(self, "Успех", "Тренировка успешно создана!")
+            self.accept()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось создать тренировку: {e}")
+
+class EditTren(QDialog, Ui_EditTren):
+    def __init__(self, db_manager, parent=None, edit_mode=False):
+        super().__init__(parent)
+        self.setupUi(self)
+        self.db_manager = db_manager
+        self.edit_mode = edit_mode
+        self.trainer_ids = {}
+        self.group_ids = {}
+        
+        self.setup_widgets()
+        self.load_trainers()
+        self.load_groups()
+        
+        if edit_mode:
+            self.addbutton_soztren.setText("Сохранить")
+            self.addbutton_soztren.clicked.connect(self.update_training)
+        else:
+            self.addbutton_soztren.setVisible(True)
+            self.name_tren.setEnabled(False)
+            self.dateTimeEdit_soztren.setEnabled(False)
+        
+        self.cancelbutton_soztren.clicked.connect(self.reject)
+
+    def setup_widgets(self):
+        self.dateTimeEdit_soztren.setCalendarPopup(True)
+        self.dateTimeEdit_soztren.setMinimumDateTime(QtCore.QDateTime(QtCore.QDate(2000, 1, 1)))
+
+    def set_training_data(self, training_data):
+        self.training_id = training_data['id_Тренировки']
+        self.name_tren.setText(training_data['Название'])
+        
+        # Устанавливаем тренера и группу
+        self.trenerBox_soztren.clear()
+        self.trenerBox_soztren.addItem(training_data['Тренер'])
+        
+        self.grupaBox_soztren.clear()
+        self.grupaBox_soztren.addItem(training_data['Группа'])
+        
+        # Устанавливаем дату и время
+        if isinstance(training_data['Дата_время'], str):
+            datetime_obj = QtCore.QDateTime.fromString(training_data['Дата_время'], 'yyyy-MM-dd HH:mm:ss')
+        else:
+            datetime_obj = QtCore.QDateTime.fromString(
+                training_data['Дата_время'].strftime('%Y-%m-%d %H:%M:%S'),
+                'yyyy-MM-dd HH:mm:ss'
+            )
+        self.dateTimeEdit_soztren.setDateTime(datetime_obj)
+
+    def update_training(self):
+        name = self.name_tren.text().strip()
+        trainer = self.trenerBox_soztren.currentText()
+        group = self.grupaBox_soztren.currentText()
+        formatted_datetime = self.dateTimeEdit_soztren.dateTime().toString("yyyy-MM-dd HH:mm:ss")
+
+        if not name or not trainer or not group:
+            QMessageBox.warning(self, "Ошибка", "Заполните все поля!")
+            return
+
+        try:
+            trainer_id = self.trainer_ids[trainer]
+            group_id = self.group_ids[group]
+            
+            query = """
+            UPDATE Расписание_тренировок 
+            SET Название = %s, id_Тренера = %s, id_Группы = %s, Дата_время = %s
+            WHERE id_Тренировки = %s
+            """
+            self.db_manager.execute_query(query, (name, trainer_id, group_id, formatted_datetime, self.training_id))
+            
+            QMessageBox.information(self, "Успех", "Тренировка успешно обновлена!")
+            self.accept()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось обновить тренировку: {e}")
+
+    def load_trainers(self):
+        query = """
+        SELECT id_Тренера, CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО 
+        FROM Тренера
+        """
+        trainers = self.db_manager.execute_query(query, fetch=True)
+        
+        self.trainer_ids = {trainer['ФИО']: trainer['id_Тренера'] for trainer in trainers}
+
+    def load_groups(self):
+        query = """
+        SELECT id_Группы, Название
+        FROM Группы
+        """
+        groups = self.db_manager.execute_query(query, fetch=True)
+        
+        self.group_ids = {group['Название']: group['id_Группы'] for group in groups}
 
 class CreateSportMan(QDialog, Ui_SportMan):
     def __init__(self, db_manager, view_mode, parent=None):
@@ -169,7 +370,7 @@ class CreateSportMan(QDialog, Ui_SportMan):
             INSERT INTO Спортсмены (Фамилия, Имя, Отчество, id_Группы, Дата_рождения, Спортивный_разряд)
             VALUES (%s, %s, %s, %s, %s, %s)
             """
-            self.db_manager.execute_query(query, (name, surname, otchestvo, group_id, datebirth, sportrazr))
+            self.db_manager.execute_query(query, (surname, name, otchestvo, group_id, datebirth, sportrazr))
             
             if self.parent() and hasattr(self.parent(), 'load_sportsmans'):
                 self.parent().load_sportsmans()
@@ -189,6 +390,7 @@ class EditSportMan(QDialog, Ui_EditSportman):
         # Setup widgets and connections
         self.setup_widgets()
         self.load_groups()
+        
         
         self.addbutton_sportman.clicked.connect(self.save_sportsman_changes)
         self.cancelbutton_sportman.clicked.connect(self.reject)
@@ -216,14 +418,14 @@ class EditSportMan(QDialog, Ui_EditSportman):
             
             self.group_ids = {}
             for group in groups:
-                display_text = f"{group['Название']} - {group['Тренер']}"
+                display_text = f"{group['Название']}"
                 self.grupaBox_sportman.addItem(display_text)
                 self.group_ids[display_text] = group['id_Группы']
                 
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить список групп: {e}")
 
-    def set_sportsman_data(self, sportsman_id, surname, name, patronymic, group, birth_date, rank):
+    def set_sportsman_data(self, sportsman_id, name, surname, patronymic, group, birth_date, rank):
         self.current_sportsman_id = sportsman_id
         self.surname_sportman.setText(surname)
         self.name_sportman.setText(name)
@@ -285,6 +487,8 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
         self.view_mode = view_mode
         
         self.setup_widgets()
+        self.setup_table()
+        self.load_sportsmen()
         
         self.addbutton_grupa.clicked.connect(self.add_group_to_db)
         self.cancelbutton_grupa.clicked.connect(self.reject)
@@ -297,9 +501,20 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
     def setup_widgets(self):
         self.load_trainers()
 
+    def setup_table(self):
+        self.tableWidget.setColumnCount(2)  # Уменьшаем количество столбцов до 2
+        self.tableWidget.setHorizontalHeaderLabels(['ФИО', 'Дата рождения'])  # Убираем 'Разряд' из заголовков
+        self.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tableWidget.setFocusPolicy(Qt.NoFocus)
+        self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)
+        self.tableWidget.setEditTriggers(QTableWidget.NoEditTriggers)
+        
+        self.tableWidget.setColumnWidth(0, 412)
+        self.tableWidget.setColumnWidth(1, 105)
+
     def load_trainers(self):
         try:
-            query = "SELECT id_Тренера, CONCAT(Имя, ' ', Фамилия, ' ', Отчество) as ФИО FROM Тренера"
+            query = "SELECT id_Тренера, CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО FROM Тренера"
             trainers = self.db_manager.execute_query(query, fetch=True)
             
             self.comboBox_trener.clear()
@@ -313,6 +528,45 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить список тренеров: {e}")
 
+    def load_sportsmen(self):
+        try:
+            if hasattr(self, 'group_id') and self.view_mode:
+                query = """
+                SELECT CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО, 
+                    Дата_рождения, 
+                    Фамилия, Имя, Отчество,
+                    id_Группы
+                FROM Спортсмены
+                WHERE id_Группы = %s
+                """
+                sportsmen = self.db_manager.execute_query(query, (self.group_id,), fetch=True)
+            else:
+                query = """
+                SELECT CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО, 
+                    Дата_рождения, 
+                    Фамилия, Имя, Отчество,
+                    id_Группы
+                FROM Спортсмены
+                WHERE id_Группы IS NULL
+                """
+                sportsmen = self.db_manager.execute_query(query, fetch=True)
+            
+            self.tableWidget.setRowCount(len(sportsmen))
+            self.sportsmen_data = {}
+            
+            for row, sportsman in enumerate(sportsmen):
+                self.tableWidget.setItem(row, 0, QTableWidgetItem(sportsman['ФИО']))
+                self.tableWidget.setItem(row, 1, QTableWidgetItem(str(sportsman['Дата_рождения'])))
+                
+                self.sportsmen_data[row] = {
+                    'Фамилия': sportsman['Фамилия'],
+                    'Имя': sportsman['Имя'],
+                    'Отчество': sportsman['Отчество']
+                }
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить список спортсменов: {e}")
+
     def add_group_to_db(self):
         name = self.name_grupa.text().strip()
         trainer = self.comboBox_trener.currentText()
@@ -322,7 +576,6 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
             return
 
         try:
-            # Проверяем существование такой же группы с тем же тренером
             check_query = """
             SELECT COUNT(*) as count 
             FROM Группы г 
@@ -335,10 +588,28 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
                 QMessageBox.warning(self, "Ошибка", "Группа с таким названием и тренером уже существует!")
                 return
 
-            # Если группа уникальная - создаём её
             trainer_id = self.trainer_ids[trainer]
             query = "INSERT INTO Группы (Название, id_Тренера) VALUES (%s, %s)"
             self.db_manager.execute_query(query, (name, trainer_id))
+
+            # Получаем ID созданной группы
+            query = "SELECT id_Группы FROM Группы WHERE Название = %s AND id_Тренера = %s"
+            result = self.db_manager.execute_query(query, (name, trainer_id), fetch=True)
+            group_id = result[0]['id_Группы']
+
+            # Добавляем выбранных спортсменов в группу
+            selected_rows = set(item.row() for item in self.tableWidget.selectedItems())
+            for row in selected_rows:
+                sportsman = self.sportsmen_data[row]
+                update_query = """
+                UPDATE Спортсмены 
+                SET id_Группы = %s 
+                WHERE Фамилия = %s AND Имя = %s AND Отчество = %s
+                """
+                self.db_manager.execute_query(
+                    update_query, 
+                    (group_id, sportsman['Фамилия'], sportsman['Имя'], sportsman['Отчество'])
+                )
             
             self.name_grupa.clear()
             self.comboBox_trener.setCurrentIndex(0)
@@ -359,7 +630,6 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
         self.view_mode = view_mode
         self.current_group_id = None
         
-        # Меняем текст кнопки на "Сохранить"
         self.addbutton_grupa.setText("Сохранить")
         
         self.addbutton_grupa.clicked.connect(self.save_group_changes)
@@ -371,9 +641,21 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
             self.addbutton_grupa.setEnabled(False)
         
         self.setup_widgets()
+        self.setup_table()
 
     def setup_widgets(self):
         self.load_trainers()
+
+    def setup_table(self):
+        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setHorizontalHeaderLabels(['ФИО', 'Дата рождения'])
+        self.tableWidget.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.tableWidget.setFocusPolicy(Qt.NoFocus)
+        self.tableWidget.setSelectionMode(QTableWidget.NoSelection)
+        self.tableWidget.setSelectionBehavior(QTableWidget.SelectRows)
+        
+        self.tableWidget.setColumnWidth(0, 412)
+        self.tableWidget.setColumnWidth(1, 105)
 
     def load_trainers(self):
         try:
@@ -391,12 +673,41 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить список тренеров: {e}")
 
+    def load_sportsmen(self):
+        try:
+            query = """
+            SELECT CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО, 
+                Дата_рождения, 
+                Фамилия, Имя, Отчество,
+                id_Группы
+            FROM Спортсмены
+            WHERE id_Группы = %s
+            """
+            sportsmen = self.db_manager.execute_query(query, (self.current_group_id,), fetch=True)
+            
+            self.tableWidget.setRowCount(len(sportsmen))
+            self.sportsmen_data = {}
+            
+            for row, sportsman in enumerate(sportsmen):
+                self.tableWidget.setItem(row, 0, QTableWidgetItem(sportsman['ФИО']))
+                self.tableWidget.setItem(row, 1, QTableWidgetItem(str(sportsman['Дата_рождения'])))
+                
+                self.sportsmen_data[row] = {
+                    'Фамилия': sportsman['Фамилия'],
+                    'Имя': sportsman['Имя'],
+                    'Отчество': sportsman['Отчество']
+                }
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить список спортсменов: {e}")
+
     def set_group_data(self, group_id, name, trainer):
         self.current_group_id = group_id
         self.name_grupa.setText(name)
         index = self.comboBox_trener.findText(trainer)
         if index >= 0:
             self.comboBox_trener.setCurrentIndex(index)
+        self.load_sportsmen()
 
     def save_group_changes(self):
         new_name = self.name_grupa.text().strip()
@@ -407,7 +718,6 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
             return
 
         try:
-            # Проверка на существование такой же группы
             check_query = """
             SELECT COUNT(*) as count 
             FROM Группы г 
@@ -637,6 +947,8 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.load_trainers()
         self.load_groups()
         self.load_sportmen()
+        self.load_trainings
+        self.load_groups_for_calendar()
         
         self.sport_ranks_order = {
                 "3ий юношеский": 1,
@@ -659,11 +971,14 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.tableWidget_tab3.doubleClicked.connect(self.on_trainer_double_click)
         self.tableWidget_tab5.doubleClicked.connect(self.on_group_double_click)
 
+        self.calendarWidget.activated.connect(self.on_calendar_double_clicked)
+        self.calendarWidget.selectionChanged.connect(self.on_calendar_date_changed)
+
         self.tableWidget_tab4.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
         self.date_sort_order = Qt.AscendingOrder  # Добавляем переменную для отслеживания порядка сортировки
 
         self.addbutton_tab2.clicked.connect(self.open_create_tren_dialog)
-        self.izmenbutton_tab2.clicked.connect(self.open_create_tren_dialog)
+        self.izmenbutton_tab2.clicked.connect(self.on_izmenbutton_clicked)
         self.delbutton_tab2.clicked.connect(self.del_tren_dialog)
 
         self.addbutton_tab3.clicked.connect(self.create_coach_dialog)
@@ -713,6 +1028,11 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.search_sportsman.setStyleSheet(search_style)
         self.search_group.setStyleSheet(search_style)
 
+        self.grupaBox_tab2.setFocusPolicy(Qt.NoFocus)
+        self.grupaBox_tab1.setFocusPolicy(Qt.NoFocus)
+        self.dateEdit_tab6.setFocusPolicy(Qt.NoFocus)
+        self.grupaBox_tab6.setFocusPolicy(Qt.NoFocus)
+
         self.login_window = LoginSystem()
         if self.login_window.exec_() != QDialog.Accepted:
             return  
@@ -751,20 +1071,337 @@ class MainWindow(QDialog, Ui_Mainwindow):
                     break
             self.tableWidget_tab5.setRowHidden(row, not show_row)
 
+    def check_training_exists(self, group_id, date):
+        query = """
+        SELECT COUNT(*) as count 
+        FROM Расписание_тренировок 
+        WHERE id_Группы = %s AND DATE(Дата_время) = %s
+        """
+        result = self.db_manager.execute_query(query, (group_id, date), fetch=True)
+        return result[0]['count'] > 0
+
+    def check_group_selected(self):
+        selected_group = self.grupaBox_tab2.currentText()
+        if selected_group == "Выбор группы":
+            QMessageBox.warning(
+                self,
+                "Внимание",
+                "Пожалуйста, выберите группу!"
+            )
+            return False
+        return True
+
     def open_create_tren_dialog(self):
-        create_tren_dialog = CreateTren(self)
-        create_tren_dialog.exec_()
+        if not self.check_group_selected():
+            return
+                
+        selected_date = self.calendarWidget.selectedDate()
+        selected_group = self.grupaBox_tab2.currentText()
+        group_id = self.calendar_group_ids[selected_group]
+        
+        # Проверяем существование тренировки на выбранную дату
+        if self.check_training_exists(group_id, selected_date.toPyDate()):
+            QMessageBox.warning(
+                self, 
+                "Внимание", 
+                "На этот день уже назначена тренировка для данной группы!"
+            )
+            return
+        
+        create_tren_dialog = CreateTren(self.db_manager, self)
+        
+        # Устанавливаем выбранную дату и время
+        current_time = QtCore.QTime.currentTime()
+        selected_datetime = QtCore.QDateTime(selected_date, current_time)
+        create_tren_dialog.dateTimeEdit_soztren.setDateTime(selected_datetime)
+        
+        # Получаем тренера для выбранной группы
+        query = """
+        SELECT CONCAT(т.Фамилия, ' ', т.Имя, ' ', т.Отчество) as ФИО
+        FROM Группы г
+        JOIN Тренера т ON г.id_Тренера = т.id_Тренера
+        WHERE г.Название = %s
+        """
+        result = self.db_manager.execute_query(query, (selected_group,), fetch=True)
+        
+        if result:
+            trainer_name = result[0]['ФИО']
+            # Очищаем и добавляем только нужного тренера
+            create_tren_dialog.trenerBox_soztren.clear()
+            create_tren_dialog.trenerBox_soztren.addItem(trainer_name)
+            create_tren_dialog.trenerBox_soztren.setEnabled(False)
+        
+        # Устанавливаем группу
+        create_tren_dialog.grupaBox_soztren.clear()
+        create_tren_dialog.grupaBox_soztren.addItem(selected_group)
+        create_tren_dialog.grupaBox_soztren.setEnabled(False)
+        
+        if create_tren_dialog.exec_() == QDialog.Accepted:
+            format = QtGui.QTextCharFormat()
+            self.calendarWidget.setDateTextFormat(QtCore.QDate(), format)
+            self.load_calendar_trainings(group_id)
+
+    def load_trainings(self):
+        try:
+            query = """
+            SELECT тр.id_Тренировки, тр.Название, 
+                CONCAT(т.Фамилия, ' ', т.Имя, ' ', т.Отчество) as Тренер,
+                г.Название as Группа, тр.Дата_время
+            FROM Тренировки тр
+            JOIN Тренера т ON тр.id_Тренера = т.id_Тренера
+            JOIN Группы г ON тр.id_Группы = г.id_Группы
+            ORDER BY тр.Дата_время DESC
+            """
+            trainings = self.db_manager.execute_query(query, fetch=True)
+            
+            # Configure table
+            self.tableWidget_tab2.clearContents()
+            self.tableWidget_tab2.setRowCount(len(trainings))
+            self.tableWidget_tab2.setColumnCount(5)
+            self.tableWidget_tab2.setHorizontalHeaderLabels([
+                'ID', 'Название', 'Тренер', 'Группа', 'Дата и время'
+            ])
+            
+            # Set table properties
+            self.tableWidget_tab2.setEditTriggers(QTableWidget.NoEditTriggers)
+            self.tableWidget_tab2.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+            self.tableWidget_tab2.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+            
+            # Fill table
+            for row, training in enumerate(trainings):
+                self.tableWidget_tab2.setItem(row, 0, QTableWidgetItem(str(training['id_Тренировки'])))
+                self.tableWidget_tab2.setItem(row, 1, QTableWidgetItem(training['Название']))
+                self.tableWidget_tab2.setItem(row, 2, QTableWidgetItem(training['Тренер']))
+                self.tableWidget_tab2.setItem(row, 3, QTableWidgetItem(training['Группа']))
+                self.tableWidget_tab2.setItem(row, 4, QTableWidgetItem(
+                    training['Дата_время'].strftime('%d.%m.%Y %H:%M')
+                ))
+            
+            # Hide ID column
+            self.tableWidget_tab2.setColumnHidden(0, True)
+            
+            # Adjust column widths
+            self.tableWidget_tab2.setColumnWidth(1, 200)
+            self.tableWidget_tab2.setColumnWidth(2, 250)
+            self.tableWidget_tab2.setColumnWidth(3, 200)
+            self.tableWidget_tab2.setColumnWidth(4, 150)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить тренировки: {e}")
+
+    def load_calendar_trainings(self, group_id=None):
+        try:
+            if group_id:
+                query = """
+                SELECT Дата_время 
+                FROM Расписание_тренировок 
+                WHERE id_Группы = %s
+                """
+                trainings = self.db_manager.execute_query(query, (group_id,), fetch=True)
+            else:
+                query = "SELECT Дата_время FROM Расписание_тренировок"
+                trainings = self.db_manager.execute_query(query, fetch=True)
+
+            # Подсвечиваем даты тренировок на календаре
+            for training in trainings:
+                date = training['Дата_время'].date()
+                format = QtGui.QTextCharFormat()
+                format.setBackground(QtGui.QColor(173, 216, 230))  # Светло-голубой цвет
+                self.calendarWidget.setDateTextFormat(QtCore.QDate(date.year, date.month, date.day), format)
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить тренировки: {e}")
+
+    def load_groups_for_calendar(self):
+        query = "SELECT id_Группы, Название FROM Группы"
+        groups = self.db_manager.execute_query(query, fetch=True)
+        
+        self.grupaBox_tab2.clear()
+        self.grupaBox_tab2.addItem("Выбор группы")
+        
+        self.calendar_group_ids = {}
+        for group in groups:
+            self.grupaBox_tab2.addItem(group['Название'])
+            self.calendar_group_ids[group['Название']] = group['id_Группы']
+        
+        self.grupaBox_tab2.currentTextChanged.connect(self.on_calendar_group_changed)
+
+    def on_calendar_group_changed(self, group_name):
+        # Очищаем все форматирование календаря
+        format = QtGui.QTextCharFormat()
+        self.calendarWidget.setDateTextFormat(QtCore.QDate(), format)
+        
+        # Проверяем выбранную дату
+        selected_date = self.calendarWidget.selectedDate()
+        current_date = QtCore.QDate.currentDate()
+        
+        # Деактивируем кнопки если выбрано "Выбор группы" или дата прошла
+        buttons_enabled = selected_date >= current_date and group_name != "Выбор группы"
+        self.addbutton_tab2.setEnabled(buttons_enabled)
+        self.izmenbutton_tab2.setEnabled(buttons_enabled)
+        self.delbutton_tab2.setEnabled(buttons_enabled)
+        
+        if not group_name or group_name == "Выбор группы":
+            return
+        else:
+            group_id = self.calendar_group_ids[group_name]
+            self.load_calendar_trainings(group_id)
+
+    def on_calendar_date_changed(self):
+        selected_date = self.calendarWidget.selectedDate()
+        current_date = QtCore.QDate.currentDate()
+        
+        # Деактивируем кнопки если дата прошла
+        self.addbutton_tab2.setEnabled(selected_date >= current_date)
+        self.izmenbutton_tab2.setEnabled(selected_date >= current_date)
+        self.delbutton_tab2.setEnabled(selected_date >= current_date)
+
+    def on_calendar_double_clicked(self, date):    
+        selected_group = self.grupaBox_tab2.currentText()
+        
+        if selected_group == "Выбор группы":
+            return
+        
+        query = """
+        SELECT рт.id_Тренировки, рт.Название, 
+            CONCAT(т.Фамилия, ' ', т.Имя, ' ', т.Отчество) as Тренер,
+            г.Название as Группа, рт.Дата_время
+        FROM Расписание_тренировок рт
+        JOIN Тренера т ON рт.id_Тренера = т.id_Тренера
+        JOIN Группы г ON рт.id_Группы = г.id_Группы
+        WHERE DATE(рт.Дата_время) = %s AND г.id_Группы = %s
+        """
+        
+        group_id = self.calendar_group_ids[selected_group]
+        trainings = self.db_manager.execute_query(query, (date.toPyDate(), group_id), fetch=True)
+        
+        if trainings:
+            edit_tren = EditTren(self.db_manager, self, edit_mode=False)  # Изменено на False для режима просмотра
+            training_data = {
+                'id_Тренировки': trainings[0]['id_Тренировки'],
+                'Название': trainings[0]['Название'],
+                'Тренер': trainings[0]['Тренер'],
+                'Группа': trainings[0]['Группа'],
+                'Дата_время': trainings[0]['Дата_время']
+            }
+            edit_tren.set_training_data(training_data)
+            
+            # Блокируем все поля для режима просмотра
+            edit_tren.trenerBox_soztren.setEnabled(False)
+            edit_tren.grupaBox_soztren.setEnabled(False)
+            edit_tren.name_tren.setEnabled(False)
+            edit_tren.dateTimeEdit_soztren.setEnabled(False)
+            edit_tren.addbutton_soztren.setEnabled(False)  # Скрываем кнопку сохранения
+            
+            edit_tren.exec_()
+
+    def refresh_groups_tab2(self):
+        self.grupaBox_tab2.clear()
+        query = """
+        SELECT DISTINCT г.Название
+        FROM Группы г
+        JOIN Тренера т ON г.id_Тренера = т.id_Тренера
+        """
+        groups = self.db_manager.execute_query(query, fetch=True)
+        self.grupaBox_tab2.addItem("Выбор группы")
+        for group in groups:
+            self.grupaBox_tab2.addItem(group['Название'])
+
+    def on_izmenbutton_clicked(self):
+        selected_date = self.calendarWidget.selectedDate()
+        selected_group = self.grupaBox_tab2.currentText()
+        
+        if selected_group == "Выбор группы":
+            QMessageBox.warning(self, "Внимание", "Выберите группу!")
+            return
+                
+        query = """
+        SELECT рт.id_Тренировки, рт.Название, 
+            т.id_Тренера,
+            CONCAT(т.Фамилия, ' ', т.Имя, ' ', т.Отчество) as Тренер,
+            г.Название as Группа, рт.Дата_время
+        FROM Расписание_тренировок рт
+        JOIN Тренера т ON рт.id_Тренера = т.id_Тренера
+        JOIN Группы г ON рт.id_Группы = г.id_Группы
+        WHERE DATE(рт.Дата_время) = %s AND г.id_Группы = %s
+        """
+        
+        group_id = self.calendar_group_ids[selected_group]
+        trainings = self.db_manager.execute_query(query, (selected_date.toPyDate(), group_id), fetch=True)
+        
+        if trainings:
+            edit_tren = EditTren(self.db_manager, self, edit_mode=True)
+            
+            # Добавляем id тренера в словарь
+            trainer_name = trainings[0]['Тренер']
+            edit_tren.trainer_ids = {trainer_name: trainings[0]['id_Тренера']}
+            
+            # Устанавливаем данные
+            edit_tren.trenerBox_soztren.clear()
+            edit_tren.trenerBox_soztren.addItem(trainer_name)
+            edit_tren.trenerBox_soztren.setEnabled(False)
+            
+            edit_tren.grupaBox_soztren.clear()
+            edit_tren.grupaBox_soztren.addItem(trainings[0]['Группа'])
+            edit_tren.grupaBox_soztren.setEnabled(False)
+            
+            training_data = {
+                'id_Тренировки': trainings[0]['id_Тренировки'],
+                'Название': trainings[0]['Название'],
+                'Тренер': trainer_name,
+                'Группа': trainings[0]['Группа'],
+                'Дата_время': trainings[0]['Дата_время']
+            }
+            edit_tren.set_training_data(training_data)
+            
+            if edit_tren.exec_():
+                self.load_calendar_trainings(group_id)
 
     def del_tren_dialog(self):
+        if not self.check_group_selected():
+            return
+            
         del_tren = QDialog(self)
         uic.loadUi('forms/deleteconfirm.ui', del_tren)
         yes_button = del_tren.findChild(QtWidgets.QPushButton, "pushButton_2")
         no_button = del_tren.findChild(QtWidgets.QPushButton, "pushButton")
+        
         if yes_button:
-            yes_button.clicked.connect(del_tren.close) ##Удаление записи о тренировке
+            yes_button.clicked.connect(lambda: (self.on_deletebutton_clicked(), del_tren.close()))
         if no_button:
             no_button.clicked.connect(del_tren.close)
+        
         del_tren.exec_()
+
+    def on_deletebutton_clicked(self):
+        if not self.check_group_selected():
+            return
+                
+        selected_date = self.calendarWidget.selectedDate()
+        selected_group = self.grupaBox_tab2.currentText()
+        group_id = self.calendar_group_ids[selected_group]
+        
+        query = """
+        SELECT id_Тренировки
+        FROM Расписание_тренировок
+        WHERE DATE(Дата_время) = %s AND id_Группы = %s
+        """
+        result = self.db_manager.execute_query(query, (selected_date.toPyDate(), group_id), fetch=True)
+        
+        if result:
+            delete_query = """
+            DELETE FROM Расписание_тренировок
+            WHERE id_Тренировки = %s
+            """
+            self.db_manager.execute_query(delete_query, (result[0]['id_Тренировки'],))
+            
+            # Очищаем подсветку для удаленной даты
+            format = QtGui.QTextCharFormat()
+            self.calendarWidget.setDateTextFormat(selected_date, format)
+            
+            self.load_calendar_trainings(group_id)
+        else:
+            QMessageBox.warning(self, "Внимание", "На выбранную дату нет тренировок!")
 
     def create_coach_dialog(self):
         create_coach_dialog = CreateCoachDialog(self.db_manager, self)
@@ -950,39 +1587,38 @@ class MainWindow(QDialog, Ui_Mainwindow):
             self.load_sportmen()
 
     def edit_sportsman(self):
-        selected_row = self.tableWidget_tab4.currentRow()
-        if selected_row == -1:
-            QMessageBox.warning(self, "Ошибка", "Выберите спортсмена для редактирования!")
+        selected_items = self.tableWidget_tab4.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "Предупреждение", "Выберите спортсмена для редактирования")
             return
 
-        # Get sportsman data from the table
-        surname = self.tableWidget_tab4.item(selected_row, 1).text()
-        name = self.tableWidget_tab4.item(selected_row, 0).text()
-        patronymic = self.tableWidget_tab4.item(selected_row, 2).text()
-        group = self.tableWidget_tab4.item(selected_row, 3).text()
-        birth_date = self.tableWidget_tab4.item(selected_row, 4).text()
-        rank = self.tableWidget_tab4.item(selected_row, 5).text()
+        row = selected_items[0].row()
+        
+        # Получаем данные из таблицы
+        surname = self.tableWidget_tab4.item(row, 0).text()
+        name = self.tableWidget_tab4.item(row, 1).text()
+        patronymic = self.tableWidget_tab4.item(row, 2).text()
+        group = self.tableWidget_tab4.item(row, 3).text()
+        birth_date = self.tableWidget_tab4.item(row, 4).text()
+        rank = self.tableWidget_tab4.item(row, 5).text()
 
-        # Get sportsman ID from database
+        # Получаем ID спортсмена из базы данных
         query = """
         SELECT id_Спортсмена 
         FROM Спортсмены 
         WHERE Фамилия = %s AND Имя = %s AND Отчество = %s
         """
         result = self.db_manager.execute_query(query, (surname, name, patronymic), fetch=True)
-        if not result:
-            QMessageBox.warning(self, "Ошибка", "Спортсмен не найден в базе данных!")
-            return
-
-        sportsman_id = result[0]['id_Спортсмена']
-
-        # Create and show edit dialog
-        edit_dialog = EditSportMan(self.db_manager, self)
-        edit_dialog.set_sportsman_data(sportsman_id, surname, name, patronymic, 
-                                    group, birth_date, rank)
         
-        if edit_dialog.exec_():
-            self.load_sportmen()
+        if result:
+            sportsman_id = result[0]['id_Спортсмена']
+            edit_dialog = EditSportMan(self.db_manager, self)
+            edit_dialog.set_sportsman_data(sportsman_id, surname, name, patronymic, group, birth_date, rank)
+            
+            if edit_dialog.exec_() == QDialog.Accepted:
+                self.load_sportmen()
+        else:
+            QMessageBox.warning(self, "Ошибка", "Спортсмен не найден в базе данных!")
 
     def load_sportmen(self):
         try:
@@ -1084,9 +1720,9 @@ class MainWindow(QDialog, Ui_Mainwindow):
             QMessageBox.warning(self, "Ошибка", "Выберите спортсмена для удаления!")
             return
 
-        surname = self.tableWidget_tab4.item(selected_row, 1).text()
-        name = self.tableWidget_tab4.item(selected_row, 0).text()
-        patronymic = self.tableWidget_tab4.item(selected_row, 2).text()
+        surname = self.tableWidget_tab4.item(selected_row, 0).text()  # Фамилия в первой колонке
+        name = self.tableWidget_tab4.item(selected_row, 1).text()     # Имя во второй колонке
+        patronymic = self.tableWidget_tab4.item(selected_row, 2).text()  # Отчество в третьей колонке
 
         try:
             query = """
@@ -1114,7 +1750,9 @@ class MainWindow(QDialog, Ui_Mainwindow):
 
     def create_gruppa_dialog(self):
         create_gruppa = CreateGruppaDialog(db_manager=self.db_manager, parent=self)
-        create_gruppa.exec_()
+        if create_gruppa.exec_() == QDialog.Accepted:
+            self.refresh_groups_tab2()  # Обновляем список групп
+            self.load_groups()  # Обновляем таблицу групп
 
     def load_groups(self):
         try:
@@ -1154,6 +1792,7 @@ class MainWindow(QDialog, Ui_Mainwindow):
         row = index.row()
         
         # Получаем данные из выбранной строки
+        group_id = self.tableWidget_tab5.item(row, 0).text()
         group_name = self.tableWidget_tab5.item(row, 1).text()
         trainer_name = self.tableWidget_tab5.item(row, 2).text()
         
@@ -1161,14 +1800,13 @@ class MainWindow(QDialog, Ui_Mainwindow):
         view_dialog = CreateGruppaDialog(self.db_manager, self, view_mode=True)
         
         # Заполняем поля данными
+        view_dialog.group_id = group_id  # Добавляем ID группы
         view_dialog.name_grupa.setText(group_name)
         view_dialog.comboBox_trener.addItem(trainer_name)
         view_dialog.comboBox_trener.setCurrentText(trainer_name)
         
-        # Делаем поля только для чтения
-        view_dialog.name_grupa.setReadOnly(True)
-        view_dialog.comboBox_trener.setEnabled(False)
-        view_dialog.addbutton_grupa.setEnabled(False)
+        # Загружаем спортсменов после установки ID группы
+        view_dialog.load_sportsmen()
         
         view_dialog.exec_()
 

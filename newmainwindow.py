@@ -91,18 +91,18 @@ class Ui_Mainwindow(object):
 "}")
         self.tab_7.setObjectName("tab_7")
         self.grupaBox_tab2 = QtWidgets.QComboBox(parent=self.tab_7)
-        self.grupaBox_tab2.setGeometry(QtCore.QRect(950, 50, 131, 22))
+        self.grupaBox_tab2.setGeometry(QtCore.QRect(860, 50, 240, 25))
         self.grupaBox_tab2.setEditable(True)
         self.grupaBox_tab2.setObjectName("grupaBox_tab2")
         self.label_2 = QtWidgets.QLabel(parent=self.tab_7)
-        self.label_2.setGeometry(QtCore.QRect(890, 50, 61, 20))
+        self.label_2.setGeometry(QtCore.QRect(800, 50, 61, 20))
         self.label_2.setStyleSheet("#label_2 {\n"
 "font-family: Avenir Next;\n"
 "font-size: 16px;\n"
 "}")
         self.label_2.setObjectName("label_2")
         self.addbutton_tab2 = QtWidgets.QPushButton(parent=self.tab_7)
-        self.addbutton_tab2.setGeometry(QtCore.QRect(780, 50, 85, 25))
+        self.addbutton_tab2.setGeometry(QtCore.QRect(690, 50, 85, 25))
         self.addbutton_tab2.setStyleSheet("#addbutton_tab2 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
@@ -116,7 +116,7 @@ class Ui_Mainwindow(object):
 "}")
         self.addbutton_tab2.setObjectName("addbutton_tab2")
         self.izmenbutton_tab2 = QtWidgets.QPushButton(parent=self.tab_7)
-        self.izmenbutton_tab2.setGeometry(QtCore.QRect(780, 90, 85, 25))
+        self.izmenbutton_tab2.setGeometry(QtCore.QRect(690, 90, 85, 25))
         self.izmenbutton_tab2.setStyleSheet("#izmenbutton_tab2 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
@@ -130,7 +130,7 @@ class Ui_Mainwindow(object):
 "}")
         self.izmenbutton_tab2.setObjectName("izmenbutton_tab2")
         self.delbutton_tab2 = QtWidgets.QPushButton(parent=self.tab_7)
-        self.delbutton_tab2.setGeometry(QtCore.QRect(780, 130, 85, 25))
+        self.delbutton_tab2.setGeometry(QtCore.QRect(690, 130, 85, 25))
         self.delbutton_tab2.setStyleSheet("#delbutton_tab2 {\n"
 "background-color: #b0c4de;\n"
 "border-radius:7%;\n"
@@ -144,7 +144,7 @@ class Ui_Mainwindow(object):
 "}")
         self.delbutton_tab2.setObjectName("delbutton_tab2")
         self.calendarWidget = QtWidgets.QCalendarWidget(parent=self.tab_7)
-        self.calendarWidget.setGeometry(QtCore.QRect(30, 10, 701, 471))
+        self.calendarWidget.setGeometry(QtCore.QRect(60, 30, 581, 421))
         font = QtGui.QFont()
         font.setKerning(True)
         self.calendarWidget.setFont(font)

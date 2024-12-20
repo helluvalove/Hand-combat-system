@@ -19,6 +19,7 @@ class Ui_Createtren(object):
         self.name_tren.setFrame(True)
         self.name_tren.setDragEnabled(False)
         self.name_tren.setObjectName("name_tren")
+        self.name_tren.setMaxLength(27)
         self.trenerBox_soztren = QtWidgets.QComboBox(Dialog)
         self.trenerBox_soztren.setGeometry(QtCore.QRect(27, 110, 336, 26))
         self.trenerBox_soztren.setEditable(True)

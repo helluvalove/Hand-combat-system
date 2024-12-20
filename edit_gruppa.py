@@ -27,9 +27,6 @@ class Ui_EditGruppa(object):
         self.comboBox_trener = QtWidgets.QComboBox(parent=Dialog)
         self.comboBox_trener.setGeometry(QtCore.QRect(28, 92, 337, 26))
         self.comboBox_trener.setObjectName("comboBox_trener")
-        self.lineEdit = QtWidgets.QLineEdit(parent=Dialog)
-        self.lineEdit.setGeometry(QtCore.QRect(400, 140, 151, 21))
-        self.lineEdit.setObjectName("lineEdit")
         self.addbutton_grupa = QtWidgets.QPushButton(parent=Dialog)
         self.addbutton_grupa.setGeometry(QtCore.QRect(480, 360, 85, 25))
         self.addbutton_grupa.setStyleSheet("#addbutton_grupa {\n"
@@ -51,10 +48,13 @@ class Ui_EditGruppa(object):
 "font-size: 16px;\n"
 "}")
         self.label.setObjectName("label")
-        self.listWidget_spotsmans = QtWidgets.QListWidget(parent=Dialog)
-        self.listWidget_spotsmans.setGeometry(QtCore.QRect(30, 130, 535, 211))
-        self.listWidget_spotsmans.setStyleSheet("")
-        self.listWidget_spotsmans.setObjectName("listWidget_spotsmans")
+        self.tableWidget = QtWidgets.QTableWidget(parent=Dialog)
+        self.tableWidget.setGeometry(QtCore.QRect(30, 150, 535, 200))
+        self.tableWidget.setStyleSheet("#tableWidget {\n"
+"background-color: #FFFFFF;\n"
+"border: 1px solid grey;\n"
+"}")
+        self.tableWidget.setObjectName("tableWidget")
         self.name_grupa = QtWidgets.QLineEdit(parent=Dialog)
         self.name_grupa.setGeometry(QtCore.QRect(30, 20, 331, 25))
         self.name_grupa.setStyleSheet("#name_grupa {\n"
@@ -71,7 +71,6 @@ class Ui_EditGruppa(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Изменение группы"))
         self.cancelbutton_grupa.setText(_translate("Dialog", "Отмена"))
-        self.lineEdit.setPlaceholderText(_translate("Dialog", "Поиск..."))
         self.addbutton_grupa.setText(_translate("Dialog", "Сохранить"))
         self.label.setText(_translate("Dialog", "Тренер:"))
         self.name_grupa.setPlaceholderText(_translate("Dialog", "Название группы"))
