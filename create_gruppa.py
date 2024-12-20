@@ -1,4 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 
 class Ui_CreateGruppa(object):
     def setupUi(self, Dialog):
@@ -20,6 +21,7 @@ class Ui_CreateGruppa(object):
         self.comboBox_trener = QtWidgets.QComboBox(parent=Dialog)
         self.comboBox_trener.setGeometry(QtCore.QRect(28, 102, 337, 26))
         self.comboBox_trener.setObjectName("comboBox_trener")
+        self.comboBox_trener.setFocusPolicy(Qt.NoFocus)
         self.label = QtWidgets.QLabel(parent=Dialog)
         self.label.setGeometry(QtCore.QRect(30, 80, 60, 16))
         self.label.setStyleSheet("#label {\n"

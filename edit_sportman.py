@@ -1,5 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PyQt5.QtCore import Qt
 
 class Ui_EditSportman(object):
     def setupUi(self, Dialog):
@@ -35,10 +35,12 @@ class Ui_EditSportman(object):
         self.datebirth_sportman = QtWidgets.QDateEdit(parent=Dialog)
         self.datebirth_sportman.setGeometry(QtCore.QRect(18, 141, 110, 24))
         self.datebirth_sportman.setObjectName("datebirth_sportman")
+        self.datebirth_sportman.setFocusPolicy(Qt.NoFocus)
         self.grupaBox_sportman = QtWidgets.QComboBox(parent=Dialog)
-        self.grupaBox_sportman.setGeometry(QtCore.QRect(16, 85, 260, 26))
+        self.grupaBox_sportman.setGeometry(QtCore.QRect(16, 85, 370, 26))
         self.grupaBox_sportman.setEditable(False)
         self.grupaBox_sportman.setObjectName("grupaBox_sportman")
+        self.grupaBox_sportman.setFocusPolicy(Qt.NoFocus)
         self.cancelbutton_sportman = QtWidgets.QPushButton(parent=Dialog)
         self.cancelbutton_sportman.setGeometry(QtCore.QRect(406, 245, 85, 25))
         self.cancelbutton_sportman.setStyleSheet("#cancelbutton_sportman {\n"
@@ -64,6 +66,7 @@ class Ui_EditSportman(object):
         self.sportrazrBox.setGeometry(QtCore.QRect(16, 198, 260, 26))
         self.sportrazrBox.setEditable(False)
         self.sportrazrBox.setObjectName("sportrazrBox")
+        self.sportrazrBox.setFocusPolicy(Qt.NoFocus)
         self.label = QtWidgets.QLabel(parent=Dialog)
         self.label.setGeometry(QtCore.QRect(20, 65, 60, 16))
         self.label.setStyleSheet("#label {\n"

@@ -1,4 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 
 class Ui_SportMan(object):
     def setupUi(self, Dialog):
@@ -63,9 +64,10 @@ class Ui_SportMan(object):
         self.name_sportman.setObjectName("name_sportman")
         self.name_sportman.setMaxLength(20)
         self.grupaBox_sportman = QtWidgets.QComboBox(parent=Dialog)
-        self.grupaBox_sportman.setGeometry(QtCore.QRect(20, 90, 151, 26))
+        self.grupaBox_sportman.setGeometry(QtCore.QRect(20, 90, 370, 26))
         self.grupaBox_sportman.setEditable(False)
         self.grupaBox_sportman.setObjectName("grupaBox_sportman")
+        self.grupaBox_sportman.setFocusPolicy(Qt.NoFocus)
         self.label = QtWidgets.QLabel(parent=Dialog)
         self.label.setGeometry(QtCore.QRect(24, 70, 60, 16))
         self.label.setStyleSheet("#label {\n"
@@ -76,6 +78,7 @@ class Ui_SportMan(object):
         self.datebirth_sportman = QtWidgets.QDateEdit(parent=Dialog)
         self.datebirth_sportman.setGeometry(QtCore.QRect(22, 146, 110, 24))
         self.datebirth_sportman.setObjectName("datebirth_sportman")
+        self.datebirth_sportman.setFocusPolicy(Qt.NoFocus)
         self.label_2 = QtWidgets.QLabel(parent=Dialog)
         self.label_2.setGeometry(QtCore.QRect(24, 125, 161, 16))
         self.label_2.setStyleSheet("#label_2 {\n"
@@ -87,6 +90,7 @@ class Ui_SportMan(object):
         self.sportrazrBox.setGeometry(QtCore.QRect(20, 203, 261, 26))
         self.sportrazrBox.setEditable(False)
         self.sportrazrBox.setObjectName("sportrazrBox")
+        self.sportrazrBox.setFocusPolicy(Qt.NoFocus)
         self.label_3 = QtWidgets.QLabel(parent=Dialog)
         self.label_3.setGeometry(QtCore.QRect(24, 180, 161, 16))
         self.label_3.setStyleSheet("#label_3 {\n"

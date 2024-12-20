@@ -1,5 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PyQt5.QtCore import Qt
 
 class Ui_EditGruppa(object):
     def setupUi(self, Dialog):
@@ -27,6 +27,7 @@ class Ui_EditGruppa(object):
         self.comboBox_trener = QtWidgets.QComboBox(parent=Dialog)
         self.comboBox_trener.setGeometry(QtCore.QRect(28, 92, 337, 26))
         self.comboBox_trener.setObjectName("comboBox_trener")
+        self.comboBox_trener.setFocusPolicy(Qt.NoFocus)
         self.addbutton_grupa = QtWidgets.QPushButton(parent=Dialog)
         self.addbutton_grupa.setGeometry(QtCore.QRect(480, 360, 85, 25))
         self.addbutton_grupa.setStyleSheet("#addbutton_grupa {\n"

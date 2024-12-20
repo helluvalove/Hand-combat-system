@@ -418,7 +418,7 @@ class EditSportMan(QDialog, Ui_EditSportman):
             
             self.group_ids = {}
             for group in groups:
-                display_text = f"{group['Название']}"
+                display_text = f"{group['Название']} - {group['Тренер']}"
                 self.grupaBox_sportman.addItem(display_text)
                 self.group_ids[display_text] = group['id_Группы']
                 
