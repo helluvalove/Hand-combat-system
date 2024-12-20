@@ -3,7 +3,7 @@ import pymysql
 from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from PyQt5.QtCore import QRegExp, QDate, Qt
 from PyQt5.QtGui import QRegExpValidator
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton, QTableWidgetItem, QHeaderView, QTableWidget, QAbstractItemView
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton, QTableWidgetItem, QHeaderView, QTableWidget, QAbstractItemView, QCheckBox, QWidget, QHBoxLayout
 from database import DatabaseManager
 from newmainwindow import Ui_Mainwindow
 from createtren import Ui_Createtren
@@ -204,8 +204,6 @@ class CreateTren(QDialog, Ui_Createtren):
             VALUES (%s, %s, %s, %s)
             """
             self.db_manager.execute_query(query, (name, trainer_id, group_id, datetime))
-            
-            QMessageBox.information(self, "Успех", "Тренировка успешно создана!")
             self.accept()
             
         except Exception as e:
@@ -279,8 +277,6 @@ class EditTren(QDialog, Ui_EditTren):
             WHERE id_Тренировки = %s
             """
             self.db_manager.execute_query(query, (name, trainer_id, group_id, formatted_datetime, self.training_id))
-            
-            QMessageBox.information(self, "Успех", "Тренировка успешно обновлена!")
             self.accept()
             
         except Exception as e:
@@ -327,7 +323,7 @@ class CreateSportMan(QDialog, Ui_SportMan):
             groups = self.db_manager.execute_query(query, fetch=True)
             
             self.grupaBox_sportman.clear()
-            self.grupaBox_sportman.addItem("Выберите группу")
+            self.grupaBox_sportman.addItem("Без группы")
             
             self.group_ids = {}
             for group in groups:
@@ -356,7 +352,7 @@ class CreateSportMan(QDialog, Ui_SportMan):
         datebirth = self.datebirth_sportman.date().toString("yyyy-MM-dd")
         sportrazr = self.sportrazrBox.currentText().strip()
 
-        if not all([surname, name]) or grupa == "Выберите группу":
+        if not all([surname, name]):
             QMessageBox.warning(self, "Ошибка", "Заполните все обязательные поля!")
             return
 
@@ -365,15 +361,19 @@ class CreateSportMan(QDialog, Ui_SportMan):
             return
 
         try:
-            group_id = self.group_ids[grupa]
+            group_id = None if grupa == "Без группы" else self.group_ids[grupa]
+            
             query = """
             INSERT INTO Спортсмены (Фамилия, Имя, Отчество, id_Группы, Дата_рождения, Спортивный_разряд)
             VALUES (%s, %s, %s, %s, %s, %s)
             """
             self.db_manager.execute_query(query, (surname, name, otchestvo, group_id, datebirth, sportrazr))
             
-            if self.parent() and hasattr(self.parent(), 'load_sportsmans'):
-                self.parent().load_sportsmans()
+            if self.parent():
+                if hasattr(self.parent(), 'load_sportsmans'):
+                    self.parent().load_sportsmans()
+                if hasattr(self.parent(), 'load_sportmen'):
+                    self.parent().load_sportmen()
             
             self.accept()
             
@@ -414,7 +414,7 @@ class EditSportMan(QDialog, Ui_EditSportman):
             groups = self.db_manager.execute_query(query, fetch=True)
             
             self.grupaBox_sportman.clear()
-            self.grupaBox_sportman.addItem("Выберите группу")
+            self.grupaBox_sportman.addItem("Без группы")
             
             self.group_ids = {}
             for group in groups:
@@ -502,15 +502,16 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
         self.load_trainers()
 
     def setup_table(self):
-        self.tableWidget.setColumnCount(2)  # Уменьшаем количество столбцов до 2
-        self.tableWidget.setHorizontalHeaderLabels(['ФИО', 'Дата рождения'])  # Убираем 'Разряд' из заголовков
+        self.tableWidget.setColumnCount(3)  # Добавляем столбец для чекбокса
+        self.tableWidget.setHorizontalHeaderLabels(['Выбрать', 'ФИО', 'Дата рождения'])
         self.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tableWidget.setFocusPolicy(Qt.NoFocus)
         self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)
         self.tableWidget.setEditTriggers(QTableWidget.NoEditTriggers)
         
-        self.tableWidget.setColumnWidth(0, 412)
-        self.tableWidget.setColumnWidth(1, 105)
+        self.tableWidget.setColumnWidth(0, 70)  # Ширина для чекбокса
+        self.tableWidget.setColumnWidth(1, 342)
+        self.tableWidget.setColumnWidth(2, 105)
 
     def load_trainers(self):
         try:
@@ -530,40 +531,59 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
 
     def load_sportsmen(self):
         try:
-            if hasattr(self, 'group_id') and self.view_mode:
-                query = """
+            all_sportsmen = []
+            
+            # Если есть ID группы (режим редактирования), загружаем её спортсменов
+            if hasattr(self, 'group_id'):
+                query_group = """
                 SELECT CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО, 
                     Дата_рождения, 
                     Фамилия, Имя, Отчество,
-                    id_Группы
+                    id_Спортсмена,
+                    TRUE as in_group
                 FROM Спортсмены
                 WHERE id_Группы = %s
                 """
-                sportsmen = self.db_manager.execute_query(query, (self.group_id,), fetch=True)
-            else:
-                query = """
-                SELECT CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО, 
-                    Дата_рождения, 
-                    Фамилия, Имя, Отчество,
-                    id_Группы
-                FROM Спортсмены
-                WHERE id_Группы IS NULL
-                """
-                sportsmen = self.db_manager.execute_query(query, fetch=True)
-            
-            self.tableWidget.setRowCount(len(sportsmen))
+                group_sportsmen = self.db_manager.execute_query(query_group, (self.group_id,), fetch=True)
+                all_sportsmen.extend(group_sportsmen)
+
+            # Загружаем спортсменов без группы
+            query_free = """
+            SELECT CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО, 
+                Дата_рождения, 
+                Фамилия, Имя, Отчество,
+                id_Спортсмена,
+                FALSE as in_group
+            FROM Спортсмены
+            WHERE id_Группы IS NULL
+            """
+            free_sportsmen = self.db_manager.execute_query(query_free, fetch=True)
+            all_sportsmen.extend(free_sportsmen)
+
+            self.tableWidget.setRowCount(len(all_sportsmen))
             self.sportsmen_data = {}
-            
-            for row, sportsman in enumerate(sportsmen):
-                self.tableWidget.setItem(row, 0, QTableWidgetItem(sportsman['ФИО']))
-                self.tableWidget.setItem(row, 1, QTableWidgetItem(str(sportsman['Дата_рождения'])))
-                
+
+            for row, sportsman in enumerate(all_sportsmen):
+                # Добавляем чекбокс
+                checkbox = QCheckBox()
+                checkbox.setChecked(sportsman['in_group'])
+                checkbox_widget = QWidget()
+                checkbox_layout = QHBoxLayout(checkbox_widget)
+                checkbox_layout.addWidget(checkbox)
+                checkbox_layout.setAlignment(Qt.AlignCenter)
+                checkbox_layout.setContentsMargins(0, 0, 0, 0)
+                self.tableWidget.setCellWidget(row, 0, checkbox_widget)
+
+                self.tableWidget.setItem(row, 1, QTableWidgetItem(sportsman['ФИО']))
+                self.tableWidget.setItem(row, 2, QTableWidgetItem(str(sportsman['Дата_рождения'])))
+
                 self.sportsmen_data[row] = {
+                    'id': sportsman['id_Спортсмена'],
                     'Фамилия': sportsman['Фамилия'],
                     'Имя': sportsman['Имя'],
                     'Отчество': sportsman['Отчество']
                 }
-                
+
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить список спортсменов: {e}")
 
@@ -598,25 +618,23 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
             group_id = result[0]['id_Группы']
 
             # Добавляем выбранных спортсменов в группу
-            selected_rows = set(item.row() for item in self.tableWidget.selectedItems())
-            for row in selected_rows:
-                sportsman = self.sportsmen_data[row]
-                update_query = """
-                UPDATE Спортсмены 
-                SET id_Группы = %s 
-                WHERE Фамилия = %s AND Имя = %s AND Отчество = %s
-                """
-                self.db_manager.execute_query(
-                    update_query, 
-                    (group_id, sportsman['Фамилия'], sportsman['Имя'], sportsman['Отчество'])
-                )
+            for row in range(self.tableWidget.rowCount()):
+                checkbox_widget = self.tableWidget.cellWidget(row, 0)
+                checkbox = checkbox_widget.findChild(QCheckBox)
+                if checkbox and checkbox.isChecked():
+                    sportsman_id = self.sportsmen_data[row]['id']
+                    update_query = "UPDATE Спортсмены SET id_Группы = %s WHERE id_Спортсмена = %s"
+                    self.db_manager.execute_query(update_query, (group_id, sportsman_id))
             
             self.name_grupa.clear()
             self.comboBox_trener.setCurrentIndex(0)
             
-            if self.parent() and hasattr(self.parent(), 'load_groups'):
-                self.parent().load_groups()
-                
+            if self.parent():
+                if hasattr(self.parent(), 'load_groups'):
+                    self.parent().load_groups()
+                if hasattr(self.parent(), 'load_sportmen'):
+                    self.parent().load_sportmen()
+            
             self.accept()
             
         except Exception as e:
@@ -647,15 +665,16 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
         self.load_trainers()
 
     def setup_table(self):
-        self.tableWidget.setColumnCount(2)
-        self.tableWidget.setHorizontalHeaderLabels(['ФИО', 'Дата рождения'])
+        self.tableWidget.setColumnCount(3)
+        self.tableWidget.setHorizontalHeaderLabels(['Выбрать', 'ФИО', 'Дата рождения'])
         self.tableWidget.setEditTriggers(QTableWidget.NoEditTriggers)
         self.tableWidget.setFocusPolicy(Qt.NoFocus)
         self.tableWidget.setSelectionMode(QTableWidget.NoSelection)
         self.tableWidget.setSelectionBehavior(QTableWidget.SelectRows)
         
-        self.tableWidget.setColumnWidth(0, 412)
-        self.tableWidget.setColumnWidth(1, 105)
+        self.tableWidget.setColumnWidth(0, 70)
+        self.tableWidget.setColumnWidth(1, 342)
+        self.tableWidget.setColumnWidth(2, 105)
 
     def load_trainers(self):
         try:
@@ -675,24 +694,63 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
 
     def load_sportsmen(self):
         try:
-            query = """
-            SELECT CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО, 
-                Дата_рождения, 
-                Фамилия, Имя, Отчество,
-                id_Группы
-            FROM Спортсмены
-            WHERE id_Группы = %s
-            """
-            sportsmen = self.db_manager.execute_query(query, (self.current_group_id,), fetch=True)
-            
-            self.tableWidget.setRowCount(len(sportsmen))
+            if self.view_mode:
+                # Загружаем только спортсменов текущей группы
+                query = """
+                SELECT CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО, 
+                    Дата_рождения, 
+                    Фамилия, Имя, Отчество,
+                    id_Спортсмена,
+                    TRUE as in_group
+                FROM Спортсмены
+                WHERE id_Группы = %s
+                """
+                all_sportsmen = list(self.db_manager.execute_query(query, (self.current_group_id,), fetch=True))
+            else:
+                # Загружаем всех спортсменов (и группы, и без группы)
+                query_group = """
+                SELECT CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО, 
+                    Дата_рождения, 
+                    Фамилия, Имя, Отчество,
+                    id_Спортсмена,
+                    TRUE as in_group
+                FROM Спортсмены
+                WHERE id_Группы = %s
+                """
+                group_sportsmen = list(self.db_manager.execute_query(query_group, (self.current_group_id,), fetch=True))
+
+                query_free = """
+                SELECT CONCAT(Фамилия, ' ', Имя, ' ', Отчество) as ФИО, 
+                    Дата_рождения, 
+                    Фамилия, Имя, Отчество,
+                    id_Спортсмена,
+                    FALSE as in_group
+                FROM Спортсмены
+                WHERE id_Группы IS NULL
+                """
+                free_sportsmen = list(self.db_manager.execute_query(query_free, fetch=True))
+                all_sportsmen = group_sportsmen + free_sportsmen
+
+            self.tableWidget.setRowCount(len(all_sportsmen))
             self.sportsmen_data = {}
             
-            for row, sportsman in enumerate(sportsmen):
-                self.tableWidget.setItem(row, 0, QTableWidgetItem(sportsman['ФИО']))
-                self.tableWidget.setItem(row, 1, QTableWidgetItem(str(sportsman['Дата_рождения'])))
+            for row, sportsman in enumerate(all_sportsmen):
+                checkbox = QCheckBox()
+                checkbox.setChecked(sportsman['in_group'])
+                if self.view_mode:
+                    checkbox.setEnabled(False)
+                checkbox_widget = QWidget()
+                checkbox_layout = QHBoxLayout(checkbox_widget)
+                checkbox_layout.addWidget(checkbox)
+                checkbox_layout.setAlignment(Qt.AlignCenter)
+                checkbox_layout.setContentsMargins(0, 0, 0, 0)
+                self.tableWidget.setCellWidget(row, 0, checkbox_widget)
+                
+                self.tableWidget.setItem(row, 1, QTableWidgetItem(sportsman['ФИО']))
+                self.tableWidget.setItem(row, 2, QTableWidgetItem(str(sportsman['Дата_рождения'])))
                 
                 self.sportsmen_data[row] = {
+                    'id': sportsman['id_Спортсмена'],
                     'Фамилия': sportsman['Фамилия'],
                     'Имя': sportsman['Имя'],
                     'Отчество': sportsman['Отчество']
@@ -732,11 +790,32 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
                 return
 
             trainer_id = self.trainer_ids[new_trainer]
+            
+            # Обновляем данные группы
             update_query = """
             UPDATE Группы SET Название = %s, id_Тренера = %s 
             WHERE id_Группы = %s
             """
             self.db_manager.execute_query(update_query, (new_name, trainer_id, self.current_group_id))
+
+            # Обновляем состав группы
+            for row in range(self.tableWidget.rowCount()):
+                checkbox_widget = self.tableWidget.cellWidget(row, 0)
+                checkbox = checkbox_widget.findChild(QCheckBox)
+                sportsman_id = self.sportsmen_data[row]['id']
+                
+                if checkbox.isChecked():
+                    update_query = "UPDATE Спортсмены SET id_Группы = %s WHERE id_Спортсмена = %s"
+                    self.db_manager.execute_query(update_query, (self.current_group_id, sportsman_id))
+                else:
+                    update_query = "UPDATE Спортсмены SET id_Группы = NULL WHERE id_Спортсмена = %s"
+                    self.db_manager.execute_query(update_query, (sportsman_id,))
+
+            if self.parent():
+                if hasattr(self.parent(), 'load_groups'):
+                    self.parent().load_groups()
+                if hasattr(self.parent(), 'load_sportmen'):
+                    self.parent().load_sportmen()
             
             self.accept()
 
@@ -794,7 +873,7 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
             QMessageBox.warning(self, "Ошибка", "Фамилия и Имя обязательны для заполнения!")
             return False
 
-        # Check for duplicate full name
+        # Проверка на дубликат ФИО
         check_name_query = """
         SELECT COUNT(*) as count FROM Тренера 
         WHERE Фамилия = %s AND Имя = %s AND Отчество = %s
@@ -805,7 +884,7 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
             QMessageBox.warning(self, "Ошибка", "Тренер с таким ФИО уже существует!")
             return False
 
-        # Check for duplicate phone number
+        # Проверка на дубликат номера телефона
         if number:
             check_phone_query = "SELECT COUNT(*) as count FROM Тренера WHERE Телефон = %s"
             result = self.db_manager.execute_query(check_phone_query, (number,), fetch=True)
@@ -823,7 +902,7 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
                 params = (surname, name, patronymic, info, number)
                 self.db_manager.execute_query(query, params)
 
-                # Clear the form after successful addition
+                # Очистка формы после успешного добавления
                 self.surname_coach.clear()
                 self.name_coach.clear()
                 self.otchestvo_coach.clear()
@@ -831,7 +910,11 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
                 self.number_coach.clear()
 
                 if self.parent():
-                    self.parent().load_trainers()
+                    if hasattr(self.parent(), 'load_trainers'):
+                        self.parent().load_trainers()
+                    if hasattr(self.parent(), 'load_coaches'):
+                        self.parent().load_coaches()
+                
                 self.accept()
                 return True
 
@@ -839,7 +922,7 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
                 print(f"Произошла ошибка: {e}")
                 QMessageBox.critical(self, "Ошибка", f"Не удалось добавить тренера: {e}")
                 return False
-
+            
     def closeEvent(self, event):
         if self.parent() and hasattr(self.parent(), "load_trainers"):
             self.parent().load_trainers()
@@ -879,8 +962,8 @@ class EditCoachDialog(QDialog, Ui_EditCoach):
         self.number_coach.setText(number)
 
     def save_coach_changes(self):
-        new_surname = self.surname_coach.text().strip()
-        new_name = self.name_coach.text().strip()
+        new_surname = self.name_coach.text().strip()
+        new_name = self.surname_coach.text().strip()
         new_patronymic = self.otchestvo_coach.text().strip()
         new_info = self.dopinfo_coach.toPlainText().strip()
         
@@ -896,42 +979,53 @@ class EditCoachDialog(QDialog, Ui_EditCoach):
             QMessageBox.warning(self, "Ошибка", "Фамилия и Имя обязательны для заполнения!")
             return
 
-        # Check for duplicate full name
-        check_name_query = """
-        SELECT COUNT(*) as count FROM Тренера 
-        WHERE Фамилия = %s AND Имя = %s AND Отчество = %s 
-        AND id_Тренера != %s
-        """
-        result = self.db_manager.execute_query(check_name_query, 
-            (new_surname, new_name, new_patronymic, self.current_coach_id), fetch=True)
-        
-        if result and result[0]['count'] > 0:
-            QMessageBox.warning(self, "Ошибка", "Тренер с таким ФИО уже существует!")
-            return
-
-        # Check for duplicate phone number
-        if new_number:
-            check_phone_query = """
+        try:
+            # Проверка на дубликат ФИО
+            check_name_query = """
             SELECT COUNT(*) as count FROM Тренера 
-            WHERE Телефон = %s AND id_Тренера != %s
+            WHERE Фамилия = %s AND Имя = %s AND Отчество = %s 
+            AND id_Тренера != %s
             """
-            result = self.db_manager.execute_query(check_phone_query, 
-                (new_number, self.current_coach_id), fetch=True)
+            result = self.db_manager.execute_query(check_name_query, 
+                (new_surname, new_name, new_patronymic, self.current_coach_id), fetch=True)
             
             if result and result[0]['count'] > 0:
-                QMessageBox.warning(self, "Ошибка", "Тренер с таким номером телефона уже существует!")
+                QMessageBox.warning(self, "Ошибка", "Тренер с таким ФИО уже существует!")
                 return
 
-        update_query = """
-        UPDATE Тренера 
-        SET Фамилия = %s, Имя = %s, Отчество = %s, Доп_информация = %s, Телефон = %s 
-        WHERE id_Тренера = %s
-        """
-        
-        if self.db_manager.execute_query(update_query, (new_surname, new_name, new_patronymic, new_info, new_number, self.current_coach_id)):
+            # Проверка на дубликат номера телефона
+            if new_number:
+                check_phone_query = """
+                SELECT COUNT(*) as count FROM Тренера 
+                WHERE Телефон = %s AND id_Тренера != %s
+                """
+                result = self.db_manager.execute_query(check_phone_query, 
+                    (new_number, self.current_coach_id), fetch=True)
+                
+                if result and result[0]['count'] > 0:
+                    QMessageBox.warning(self, "Ошибка", "Тренер с таким номером телефона уже существует!")
+                    return
+
+            update_query = """
+            UPDATE Тренера 
+            SET Фамилия = %s, Имя = %s, Отчество = %s, Доп_информация = %s, Телефон = %s 
+            WHERE id_Тренера = %s
+            """
+            
+            self.db_manager.execute_query(update_query, 
+                (new_surname, new_name, new_patronymic, new_info, new_number, self.current_coach_id))
+            
+            # Обновляем таблицы в родительском окне
+            if self.parent():
+                if hasattr(self.parent(), 'load_trainers'):
+                    self.parent().load_trainers()
+                if hasattr(self.parent(), 'load_coaches'):
+                    self.parent().load_coaches()
+            
             self.accept()
-        else:
-            QMessageBox.warning(self, "Ошибка", "Не удалось обновить данные. Возможно, они не изменились.")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось обновить данные тренера: {e}")
 
 class MainWindow(QDialog, Ui_Mainwindow):
     def __init__(self, parent=None):
@@ -1227,7 +1321,7 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.grupaBox_tab2.currentTextChanged.connect(self.on_calendar_group_changed)
 
     def on_calendar_group_changed(self, group_name):
-        # Очищаем все форматирование календаря
+        # Очищаем форматирование календаря
         format = QtGui.QTextCharFormat()
         self.calendarWidget.setDateTextFormat(QtCore.QDate(), format)
         
@@ -1235,17 +1329,17 @@ class MainWindow(QDialog, Ui_Mainwindow):
         selected_date = self.calendarWidget.selectedDate()
         current_date = QtCore.QDate.currentDate()
         
-        # Деактивируем кнопки если выбрано "Выбор группы" или дата прошла
-        buttons_enabled = selected_date >= current_date and group_name != "Выбор группы"
-        self.addbutton_tab2.setEnabled(buttons_enabled)
-        self.izmenbutton_tab2.setEnabled(buttons_enabled)
-        self.delbutton_tab2.setEnabled(buttons_enabled)
-        
+        # Если пустая строка или "Выбор группы" - выходим
         if not group_name or group_name == "Выбор группы":
             return
-        else:
+            
+        # Получаем id группы
+        if group_name in self.calendar_group_ids:
             group_id = self.calendar_group_ids[group_name]
             self.load_calendar_trainings(group_id)
+        else:
+            # Обновляем список групп если группа не найдена
+            self.load_groups_for_calendar()
 
     def on_calendar_date_changed(self):
         selected_date = self.calendarWidget.selectedDate()
@@ -1437,9 +1531,9 @@ class MainWindow(QDialog, Ui_Mainwindow):
             self.tableWidget_tab3.setEditTriggers(QTableWidget.NoEditTriggers)
             self.tableWidget_tab3.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
             self.tableWidget_tab3.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-            self.tableWidget_tab3.setColumnWidth(0, 180)
-            self.tableWidget_tab3.setColumnWidth(1, 180)
-            self.tableWidget_tab3.setColumnWidth(2, 180)
+            self.tableWidget_tab3.setColumnWidth(0, 250)
+            self.tableWidget_tab3.setColumnWidth(1, 250)
+            self.tableWidget_tab3.setColumnWidth(2, 250)
             self.tableWidget_tab3.setColumnWidth(3, 300)
             self.tableWidget_tab3.setColumnWidth(4, 170)
 
@@ -1451,17 +1545,17 @@ class MainWindow(QDialog, Ui_Mainwindow):
 
 
             for row_index, trainer in enumerate(trainers):
-                # Сохраняем ID как данные ячейки
                 id_item = QTableWidgetItem(str(trainer['id_Тренера']))
                 self.tableWidget_tab3.setItem(row_index, 5, id_item)
-                # Остальные данные
-                self.tableWidget_tab3.setItem(row_index, 0, QTableWidgetItem(trainer['Фамилия']))
-                self.tableWidget_tab3.setItem(row_index, 1, QTableWidgetItem(trainer['Имя']))
+                
+                # Меняем порядок заполнения данных
+                self.tableWidget_tab3.setItem(row_index, 0, QTableWidgetItem(trainer['Фамилия']))  # Фамилия в колонку Имя
+                self.tableWidget_tab3.setItem(row_index, 1, QTableWidgetItem(trainer['Имя']))      # Имя в колонку Фамилия
                 self.tableWidget_tab3.setItem(row_index, 2, QTableWidgetItem(trainer['Отчество']))
                 self.tableWidget_tab3.setItem(row_index, 3, QTableWidgetItem(trainer['Доп_информация']))
                 formatted_phone = self.format_phone_number(trainer['Телефон'])
                 self.tableWidget_tab3.setItem(row_index, 4, QTableWidgetItem(formatted_phone))
-                
+
         except pymysql.Error as e:
             QMessageBox.critical(self, "Ошибка загрузки данных", f"Ошибка при обращении к базе данных: {e}")
         finally:
@@ -1510,24 +1604,32 @@ class MainWindow(QDialog, Ui_Mainwindow):
             QMessageBox.warning(self, "Ошибка", "Выберите тренера для редактирования!")
             return
 
-        surname = self.tableWidget_tab3.item(selected_row, 1).text()
-        name = self.tableWidget_tab3.item(selected_row, 0).text()
-        patronymic = self.tableWidget_tab3.item(selected_row, 2).text()
+        # Исправляем порядок получения данных из таблицы
+        name = self.tableWidget_tab3.item(selected_row, 0).text()  # Фамилия в колонке 0
+        surname = self.tableWidget_tab3.item(selected_row, 1).text()     # Имя в колонке 1
+        patronymic = self.tableWidget_tab3.item(selected_row, 2).text() # Отчество в колонке 2
         info = self.tableWidget_tab3.item(selected_row, 3).text()
         number = self.tableWidget_tab3.item(selected_row, 4).text()
 
         edit_dialog = EditCoachDialog(self.db_manager, self)
-        edit_dialog.set_coach_data(self.get_coach_id(surname, name, patronymic), surname, name, patronymic, info, number)
-        edit_dialog.exec_()
-        if edit_dialog.result():
+        edit_dialog.set_coach_data(self.get_coach_id(name, surname, patronymic), 
+                                surname, name, patronymic, info, number)
+        
+        if edit_dialog.exec_() == QDialog.Accepted:
             self.load_trainers()
+            self.load_groups()
+            self.load_sportmen()
 
     def get_coach_id(self, surname, name, patronymic):
-        coach_id_query = "SELECT id_Тренера FROM Тренера WHERE Фамилия = %s AND Имя = %s AND Отчество = %s"
+        coach_id_query = """
+        SELECT id_Тренера 
+        FROM Тренера 
+        WHERE Фамилия = %s AND Имя = %s AND Отчество = %s
+        """
         result = self.db_manager.execute_query(coach_id_query, (surname, name, patronymic), fetch=True)
-        if result:
-            return result[0]['id_Тренера']
-        return None
+        if not result:
+            raise ValueError(f"Тренер {surname} {name} {patronymic} не найден в базе данных")
+        return result[0]['id_Тренера']
     
     def del_coach(self):
         selected_row = self.tableWidget_tab3.currentRow()
@@ -1629,10 +1731,11 @@ class MainWindow(QDialog, Ui_Mainwindow):
 
             with connection.cursor(pymysql.cursors.DictCursor) as cursor:
                 query = """
-                SELECT с.Фамилия, с.Имя, с.Отчество, г.Название as Группа, 
+                SELECT с.Фамилия, с.Имя, с.Отчество, 
+                    COALESCE(г.Название, 'Без группы') as Группа, 
                     с.Дата_рождения, с.Спортивный_разряд 
                 FROM Спортсмены с
-                JOIN Группы г ON с.id_Группы = г.id_Группы
+                LEFT JOIN Группы г ON с.id_Группы = г.id_Группы
                 """
                 cursor.execute(query)
                 sportmen = cursor.fetchall()
@@ -1753,6 +1856,7 @@ class MainWindow(QDialog, Ui_Mainwindow):
         if create_gruppa.exec_() == QDialog.Accepted:
             self.refresh_groups_tab2()  # Обновляем список групп
             self.load_groups()  # Обновляем таблицу групп
+            self.load_groups_for_calendar() 
 
     def load_groups(self):
         try:
@@ -1770,8 +1874,8 @@ class MainWindow(QDialog, Ui_Mainwindow):
             self.tableWidget_tab5.setColumnCount(3)
             self.tableWidget_tab5.setHorizontalHeaderLabels(['ID', 'Название группы', 'Тренер'])
             self.tableWidget_tab5.setEditTriggers(QTableWidget.NoEditTriggers)
-            self.tableWidget_tab5.setColumnWidth(1, 180)
-            self.tableWidget_tab5.setColumnWidth(2, 300)
+            self.tableWidget_tab5.setColumnWidth(1, 300)
+            self.tableWidget_tab5.setColumnWidth(2, 550)
 
             self.tableWidget_tab5.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows) 
             self.tableWidget_tab5.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -1797,16 +1901,10 @@ class MainWindow(QDialog, Ui_Mainwindow):
         trainer_name = self.tableWidget_tab5.item(row, 2).text()
         
         # Создаём диалог в режиме просмотра
-        view_dialog = CreateGruppaDialog(self.db_manager, self, view_mode=True)
+        view_dialog = EditGruppaDialog(self.db_manager, self, view_mode=True)
         
-        # Заполняем поля данными
-        view_dialog.group_id = group_id  # Добавляем ID группы
-        view_dialog.name_grupa.setText(group_name)
-        view_dialog.comboBox_trener.addItem(trainer_name)
-        view_dialog.comboBox_trener.setCurrentText(trainer_name)
-        
-        # Загружаем спортсменов после установки ID группы
-        view_dialog.load_sportsmen()
+        # Устанавливаем данные группы
+        view_dialog.set_group_data(group_id, group_name, trainer_name)
         
         view_dialog.exec_()
 
@@ -1831,21 +1929,29 @@ class MainWindow(QDialog, Ui_Mainwindow):
         if selected_row == -1:
             QMessageBox.warning(self, "Ошибка", "Выберите группу для удаления!")
             return
-            
+                
         group_id = self.tableWidget_tab5.item(selected_row, 0).text()
         group_name = self.tableWidget_tab5.item(selected_row, 1).text()
         
-        reply = QMessageBox.question(self, 'Подтверждение', 
-                                f'Вы уверены, что хотите удалить группу "{group_name}"?',
-                                QMessageBox.Yes | QMessageBox.No)
-                                
-        if reply == QMessageBox.Yes:
-            try:
-                query = "DELETE FROM Группы WHERE id_Группы = %s"
-                self.db_manager.execute_query(query, (group_id,))
-                self.load_groups()
-            except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Не удалось удалить группу: {e}")
+        try:
+            # Обновляем записи спортсменов
+            update_query = "UPDATE Спортсмены SET id_Группы = NULL WHERE id_Группы = %s"
+            self.db_manager.execute_query(update_query, (group_id,))
+            
+            # Удаляем группу
+            delete_query = "DELETE FROM Группы WHERE id_Группы = %s"
+            self.db_manager.execute_query(delete_query, (group_id,))
+            
+            # Обновляем все списки
+            self.load_groups()
+            self.load_sportmen()
+            self.refresh_groups_tab2()  # Обновляем список групп в календаре
+            self.load_groups_for_calendar()  # Обновляем список групп для календаря
+            
+            QMessageBox.information(self, "Успех", f"Группа {group_name} успешно удалена. Спортсмены этой группы сохранены в базе.")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось удалить группу: {e}")
 
     def del_otchet_dialog(self):
         del_otchet = QDialog(self)
