@@ -488,10 +488,39 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
         
         self.setup_widgets()
         self.setup_table()
-        self.load_sportsmen()
+
+        search_style = """
+            QLineEdit {
+                background-color: white;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 5px;
+            }
+        """
+
+        self.search_sportsman = QtWidgets.QLineEdit(self)
+        self.search_sportsman.setGeometry(QtCore.QRect(380, 115, 185, 30))
+        self.search_sportsman.setPlaceholderText("Поиск спортсмена...")
+        self.search_sportsman.textChanged.connect(self.search_sportsmen)
+        self.search_sportsman.setMaxLength(20)
+        self.search_sportsman.setStyleSheet(search_style)
         
+        self.load_sportsmen()
+
         self.addbutton_grupa.clicked.connect(self.add_group_to_db)
         self.cancelbutton_grupa.clicked.connect(self.reject)
+
+# Add search method
+    def search_sportsmen(self):
+        search_text = self.search_sportsman.text().lower()
+        for row in range(self.tableWidget.rowCount()):
+            show_row = False
+            for col in range(1, self.tableWidget.columnCount()):  # Start from 1 to skip checkbox column
+                item = self.tableWidget.item(row, col)
+                if item and search_text in item.text().lower():
+                    show_row = True
+                    break
+            self.tableWidget.setRowHidden(row, not show_row)
 
         if self.view_mode:
             self.name_grupa.setReadOnly(True)
@@ -509,8 +538,8 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
         self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)
         self.tableWidget.setEditTriggers(QTableWidget.NoEditTriggers)
         
-        self.tableWidget.setColumnWidth(0, 70)  # Ширина для чекбокса
-        self.tableWidget.setColumnWidth(1, 342)
+        self.tableWidget.setColumnWidth(0, 30)  # Ширина для чекбокса
+        self.tableWidget.setColumnWidth(1, 365)
         self.tableWidget.setColumnWidth(2, 105)
 
     def load_trainers(self):
@@ -648,15 +677,45 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
         self.view_mode = view_mode
         self.current_group_id = None
         
+        self.setup_widgets()
+        self.setup_table()
+
+        search_style = """
+                    QLineEdit {
+                        background-color: white;
+                        border: 1px solid #ccc;
+                        border-radius: 5px;
+                        padding: 5px;
+                    }
+                """
+
+        self.search_sportsman = QtWidgets.QLineEdit(self)
+        self.search_sportsman.setGeometry(QtCore.QRect(380, 115, 185, 30))
+        self.search_sportsman.setPlaceholderText("Поиск спортсмена...")
+        self.search_sportsman.textChanged.connect(self.search_sportsmen)
+        self.search_sportsman.setMaxLength(20)
+        self.search_sportsman.setStyleSheet(search_style)
+
         self.addbutton_grupa.setText("Сохранить")
-        
         self.addbutton_grupa.clicked.connect(self.save_group_changes)
         self.cancelbutton_grupa.clicked.connect(self.reject)
-        
+
         if self.view_mode:
             self.name_grupa.setReadOnly(True)
             self.comboBox_trener.setEnabled(False)
             self.addbutton_grupa.setEnabled(False)
+        
+# Add search method
+    def search_sportsmen(self):
+        search_text = self.search_sportsman.text().lower()
+        for row in range(self.tableWidget.rowCount()):
+            show_row = False
+            for col in range(1, self.tableWidget.columnCount()):  # Start from 1 to skip checkbox column
+                item = self.tableWidget.item(row, col)
+                if item and search_text in item.text().lower():
+                    show_row = True
+                    break
+            self.tableWidget.setRowHidden(row, not show_row)
         
         self.setup_widgets()
         self.setup_table()
@@ -666,14 +725,14 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
 
     def setup_table(self):
         self.tableWidget.setColumnCount(3)
-        self.tableWidget.setHorizontalHeaderLabels(['Выбрать', 'ФИО', 'Дата рождения'])
+        self.tableWidget.setHorizontalHeaderLabels([' ', 'ФИО', 'Дата рождения'])
         self.tableWidget.setEditTriggers(QTableWidget.NoEditTriggers)
         self.tableWidget.setFocusPolicy(Qt.NoFocus)
         self.tableWidget.setSelectionMode(QTableWidget.NoSelection)
         self.tableWidget.setSelectionBehavior(QTableWidget.SelectRows)
         
-        self.tableWidget.setColumnWidth(0, 70)
-        self.tableWidget.setColumnWidth(1, 342)
+        self.tableWidget.setColumnWidth(0, 30)
+        self.tableWidget.setColumnWidth(1, 365)
         self.tableWidget.setColumnWidth(2, 105)
 
     def load_trainers(self):
@@ -816,6 +875,10 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
                     self.parent().load_groups()
                 if hasattr(self.parent(), 'load_sportmen'):
                     self.parent().load_sportmen()
+                if hasattr(self.parent(), 'refresh_groups_combobox'):
+                    self.parent().refresh_groups_combobox()
+                if hasattr(self.parent(), 'refresh_groups_tab2'):
+                    self.parent().refresh_groups_tab2()
             
             self.accept()
 
@@ -1044,6 +1107,16 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.load_trainings
         self.load_groups_for_calendar()
         
+        self.setup_attendance_tab()
+        self.rank_sort_order = Qt.AscendingOrder
+        
+        self.tableposeshaem.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.tableposeshaem.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.setup_attendance_tab()
+
+        # Подключаем сигнал выбора группы
+        self.grupaBox_tab1.currentIndexChanged.connect(self.on_group_selected)
+
         self.sport_ranks_order = {
                 "3ий юношеский": 1,
                 "2ой юношеский": 2,
@@ -1319,6 +1392,8 @@ class MainWindow(QDialog, Ui_Mainwindow):
             self.calendar_group_ids[group['Название']] = group['id_Группы']
         
         self.grupaBox_tab2.currentTextChanged.connect(self.on_calendar_group_changed)
+        if hasattr(self, 'refresh_groups_combobox'):
+            self.refresh_groups_combobox()
 
     def on_calendar_group_changed(self, group_name):
         # Очищаем форматирование календаря
@@ -1952,6 +2027,242 @@ class MainWindow(QDialog, Ui_Mainwindow):
             
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось удалить группу: {e}")
+
+    def get_training_dates(self, group_id, current_date):
+        # Получаем даты тренировок для выбранной группы за текущий месяц
+        query = """
+        SELECT DISTINCT DATE(Дата_время) as Дата
+        FROM Расписание_тренировок
+        WHERE id_Группы = %s 
+        AND MONTH(Дата_время) = %s 
+        AND YEAR(Дата_время) = %s 
+        ORDER BY Дата
+        """
+        
+        current_month = current_date.month()
+        current_year = current_date.year()
+        
+        training_dates = self.db_manager.execute_query(query, 
+            (group_id, current_month, current_year), fetch=True)
+        
+        dates_formatted = []
+        for date in training_dates:
+            qdate = QDate.fromString(str(date['Дата']), 'yyyy-MM-dd')
+            dates_formatted.append(qdate.toString('dd.MM'))
+        
+        return dates_formatted
+
+    def get_group_athletes(self, group_id):
+        query = """
+        SELECT с.id_Спортсмена, с.Фамилия, с.Имя, с.Отчество
+        FROM Спортсмены с
+        WHERE с.id_Группы = %s
+        ORDER BY с.Фамилия, с.Имя
+        """
+        return self.db_manager.execute_query(query, (group_id,), fetch=True)
+
+    def get_athlete_id(self, row):
+        # Получаем id спортсмена из таблицы по номеру строки
+        athlete_data = self.get_group_athletes(self.grupaBox_tab1.currentData())
+        return athlete_data[row]['id_Спортсмена']
+
+    def get_date_from_column(self, col):
+        # Получаем дату из заголовка колонки
+        date_text = self.tableposeshaem.horizontalHeaderItem(col).text()
+        # Преобразуем формат дд.ММ в корректный YYYY-MM-DD
+        day, month = date_text.split('.')
+        current_year = QDate.currentDate().year()
+        formatted_date = f"{current_year}-{month}-{day} 00:00:00"
+        return formatted_date
+
+    def setup_attendance_columns(self):
+        current_date = QDate.currentDate()
+        group_id = self.grupaBox_tab1.currentData()
+        
+        if group_id is None:
+            return
+            
+        training_dates = self.get_training_dates(group_id, current_date)
+        
+        # Настраиваем колонки таблицы
+        self.tableposeshaem.setColumnCount(len(training_dates) + 1)  # +1 для колонки с ФИО
+        
+        # Устанавливаем заголовки
+        headers = ['ФИО']  # Первая колонка для ФИО
+        headers.extend(training_dates)  # Добавляем даты тренировок
+        
+        self.tableposeshaem.setHorizontalHeaderLabels(headers)
+        
+        # Настраиваем ширину колонок
+        self.tableposeshaem.setColumnWidth(0, 300)  # ФИО
+        for i in range(1, len(headers)):
+            self.tableposeshaem.setColumnWidth(i, 80)  # Колонки с датами
+
+    def load_groups_to_combobox(self):
+        query = "SELECT id_Группы, Название FROM Группы"
+        groups = self.db_manager.execute_query(query, fetch=True)
+        
+        self.grupaBox_tab1.clear()
+        for group in groups:
+            self.grupaBox_tab1.addItem(group['Название'], group['id_Группы'])
+
+    def on_group_selected(self):
+        if self.grupaBox_tab1.currentIndex() == -1:
+            return
+            
+        group_id = self.grupaBox_tab1.currentData()
+        self.load_attendance_table(group_id)
+
+    def load_attendance_table(self, group_id):
+        # Получаем текущую дату и даты тренировок
+        current_date = QDate.currentDate()
+        training_dates = self.get_training_dates(group_id, current_date)
+        
+        # Получаем список спортсменов группы
+        athletes = self.get_group_athletes(group_id)
+        
+        # Настраиваем таблицу
+        self.tableposeshaem.clear()
+        self.tableposeshaem.setRowCount(len(athletes))
+        self.tableposeshaem.setColumnCount(len(training_dates) + 1)
+        
+        # Устанавливаем заголовки
+        headers = ['ФИО'] + training_dates
+        self.tableposeshaem.setHorizontalHeaderLabels(headers)
+        
+        # Заполняем ФИО спортсменов и создаем чекбоксы
+        for row, athlete in enumerate(athletes):
+            # Добавляем ФИО
+            self.tableposeshaem.setItem(row, 0, QTableWidgetItem(
+                f"{athlete['Фамилия']} {athlete['Имя']} {athlete['Отчество']}"
+            ))
+            
+            # Добавляем чекбоксы для каждой даты
+            for col, date in enumerate(training_dates, start=1):
+                checkbox = QCheckBox()
+                # Преобразуем дату тренировки в QDate
+                training_date = QDate.fromString(date, 'dd.MM')
+                training_date = QDate(current_date.year(), training_date.month(), training_date.day())
+                
+                # Делаем чекбокс неактивным для будущих дат
+                if training_date > current_date:
+                    checkbox.setEnabled(False)
+                    
+                self.tableposeshaem.setCellWidget(row, col, checkbox)
+                checkbox.stateChanged.connect(
+                    lambda state, r=row, c=col: self.on_attendance_changed(r, c, state)
+                )
+        
+        # Загружаем существующие отметки посещаемости
+        self.load_attendance_marks(group_id, training_dates, athletes)
+        
+        # Устанавливаем ширину колонок
+        self.tableposeshaem.setColumnWidth(0, 300)
+        for col in range(1, len(training_dates) + 1):
+            self.tableposeshaem.setColumnWidth(col, 80)
+
+    def setup_attendance_table(self, training_dates, athletes):
+        self.tableposeshaem.clear()
+        self.tableposeshaem.setRowCount(len(athletes))
+        self.tableposeshaem.setColumnCount(len(training_dates) + 1)
+        
+        # Устанавливаем заголовки
+        headers = ['ФИО'] + training_dates  # Даты уже в нужном формате
+        self.tableposeshaem.setHorizontalHeaderLabels(headers)
+        self.tableposeshaem.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableposeshaem.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Fixed)
+
+        # Заполняем ФИО спортсменов
+        for row, athlete in enumerate(athletes):
+            self.tableposeshaem.setItem(row, 0, QTableWidgetItem(
+                f"{athlete['Фамилия']} {athlete['Имя']} {athlete['Отчество']}"
+            ))
+            
+            # Добавляем чекбоксы для каждой даты
+            for col in range(1, len(training_dates) + 1):
+                checkbox = QCheckBox()
+                self.tableposeshaem.setCellWidget(row, col, checkbox)
+                checkbox.stateChanged.connect(
+                    lambda state, r=row, c=col: self.on_attendance_changed(r, c, state)
+                )
+
+    def after_athlete_added(self):
+        group_id = self.grupaBox_tab1.currentData()
+        if group_id:
+            self.load_attendance_table(group_id)
+
+    def refresh_attendance_list(self):
+        group_id = self.grupaBox_tab1.currentData()
+        if group_id:
+            self.load_attendance_table(group_id)
+
+    def setup_attendance_tab(self):
+        # Инициализация вкладки посещаемости
+        self.load_groups_to_combobox()
+        self.rank_sort_order = Qt.AscendingOrder
+        
+        # Подключаем сигнал выбора группы
+        self.grupaBox_tab1.currentIndexChanged.connect(self.on_group_selected)
+
+    def on_attendance_changed(self, row, col, state):
+        group_id = self.grupaBox_tab1.currentData()
+        athlete_id = self.get_athlete_id(row)
+        date = self.get_date_from_column(col)
+        
+        attendance_value = 1 if state == Qt.Checked else 0
+        
+        # Сохраняем отметку в БД
+        self.save_attendance_mark(group_id, athlete_id, date, attendance_value)
+
+    def save_attendance_mark(self, group_id, athlete_id, date, value):
+        query = """
+        INSERT INTO Посещаемость (id_Спортсмена, id_Группы, Дата_время, Отметка)
+        VALUES (%s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE Отметка = %s
+        """
+        self.db_manager.execute_query(query, 
+            (athlete_id, group_id, date, value, value)
+        )
+
+    def load_attendance_marks(self, group_id, training_dates, athletes):
+        query = """
+        SELECT id_Спортсмена, DATE(Дата_время) as Дата, Отметка 
+        FROM Посещаемость 
+        WHERE id_Группы = %s
+        """
+        attendance_records = self.db_manager.execute_query(query, (group_id,), fetch=True)
+        
+        # Создаем словарь для быстрого доступа к отметкам
+        attendance_dict = {}
+        for record in attendance_records:
+            date_str = record['Дата'].strftime('%d.%m')  # Преобразуем дату в формат дд.мм
+            key = (record['id_Спортсмена'], date_str)
+            attendance_dict[key] = record['Отметка']
+        
+        # Устанавливаем состояние чекбоксов
+        for row, athlete in enumerate(athletes):
+            for col, date in enumerate(training_dates, start=1):
+                checkbox = self.tableposeshaem.cellWidget(row, col)
+                if checkbox:
+                    key = (athlete['id_Спортсмена'], date)
+                    is_checked = attendance_dict.get(key, 0) == 1
+                    checkbox.setChecked(is_checked)
+
+    def refresh_groups_combobox(self):
+        current_group_id = self.grupaBox_tab1.currentData()
+        current_group_id2 = self.grupaBox_tab2.currentData()
+        
+        self.load_groups_to_combobox()
+        
+        # Восстанавливаем выбранную группу для первого комбобокса
+        index = self.grupaBox_tab1.findData(current_group_id)
+        if index >= 0:
+            self.grupaBox_tab1.setCurrentIndex(index)
+        
+        # Восстанавливаем выбранную группу для второго комбобокса
+        index2 = self.grupaBox_tab2.findData(current_group_id2)
+        if index2 >= 0:
+            self.grupaBox_tab2.setCurrentIndex(index2)
 
     def del_otchet_dialog(self):
         del_otchet = QDialog(self)

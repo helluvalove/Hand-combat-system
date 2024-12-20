@@ -80,6 +80,22 @@ class Ui_Mainwindow(object):
         self.tableposeshaem.setObjectName("tableposeshaem")
         self.tableposeshaem.setColumnCount(0)
         self.tableposeshaem.setRowCount(0)
+        self.refresh_attendance_btn = QtWidgets.QPushButton(parent=self.tab_8)
+        self.refresh_attendance_btn.setGeometry(QtCore.QRect(270, 30, 100, 21))
+        self.refresh_attendance_btn.setText("Обновить")
+        self.refresh_attendance_btn.clicked.connect(self.refresh_attendance_list)
+        self.refresh_attendance_btn.setStyleSheet("#refreshbut_tab1 {\n"
+"background-color: #b0c4de;\n"
+"border-radius:7%;\n"
+"border: 1px solid grey;\n"
+"font-family: Avenir Next;\n"
+"font-size: 16px;\n"
+"}\n"
+"\n"
+"#refreshbut_tab1:hover {\n"
+"background-color: #eedc82\n"
+"}")
+        self.refresh_attendance_btn.setObjectName("refreshbut_tab1")
         self.tabWidget_tab5.addTab(self.tab_8, "")
         self.tab_7 = QtWidgets.QWidget()
         self.tab_7.setStyleSheet("#tab_7 {\n"
