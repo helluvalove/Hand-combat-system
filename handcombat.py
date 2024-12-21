@@ -2,8 +2,8 @@ import sys
 import pymysql
 from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from PyQt5.QtCore import QRegExp, QDate, Qt
-from PyQt5.QtGui import QRegExpValidator
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton, QTableWidgetItem, QHeaderView, QTableWidget, QAbstractItemView, QCheckBox, QWidget, QHBoxLayout
+from PyQt5.QtGui import QRegExpValidator, QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton, QTableWidgetItem, QHeaderView, QTableWidget, QAbstractItemView, QCheckBox, QWidget, QHBoxLayout, QCalendarWidget
 from database import DatabaseManager
 from newmainwindow import Ui_Mainwindow
 from createtren import Ui_Createtren
@@ -1113,6 +1113,7 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.tableposeshaem.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.tableposeshaem.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.setup_attendance_tab()
+        self.setup_reporting_tab()
 
         # Подключаем сигнал выбора группы
         self.grupaBox_tab1.currentIndexChanged.connect(self.on_group_selected)
@@ -1159,8 +1160,6 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.addbutton_tab5.clicked.connect(self.create_gruppa_dialog)
         self.izmenbutton_tab5.clicked.connect(self.edit_group)
         self.delbutton_tab5.clicked.connect(self.delete_group)
-
-        self.clearbutton_tab6.clicked.connect(self.del_otchet_dialog)
 
         # Поиск для тренеров
         self.search_coach = QtWidgets.QLineEdit(self.tab_6)  # Привязываем к вкладке тренеров
@@ -2264,16 +2263,162 @@ class MainWindow(QDialog, Ui_Mainwindow):
         if index2 >= 0:
             self.grupaBox_tab2.setCurrentIndex(index2)
 
+    def setup_reporting_tab(self):
+        # Настраиваем ListView для общей статистики
+        self.model_stats = QStandardItemModel()
+        self.listView_tab6.setModel(self.model_stats)
+        
+        # Настраиваем таблицу посещаемости
+        self.tableWidget_tab6.setColumnCount(2)
+        self.tableWidget_tab6.setHorizontalHeaderLabels(['ФИО', 'Посещаемость, %'])
+        self.tableWidget_tab6.setColumnWidth(0, 450)
+        self.tableWidget_tab6.setColumnWidth(1, 200)
+        
+        # Подключаем сигналы
+        self.dateEdit_tab6.dateChanged.connect(self.update_reporting)
+        self.grupaBox_tab6.currentIndexChanged.connect(self.update_reporting)
+        self.clearbutton_tab6.clicked.connect(self.del_otchet_dialog)
+
+    def update_reporting(self):
+        selected_date = self.dateEdit_tab6.date()
+        selected_group = self.grupaBox_tab6.currentText()
+        
+        try:
+            # Обновляем общую статистику в ListView
+            self.update_general_stats()
+            # Обновляем таблицу посещаемости
+            self.update_attendance_table(selected_date, selected_group)
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось обновить отчетность: {e}")
+
+    def update_general_stats(self):
+        try:
+            self.model_stats.clear()
+            
+            # Получаем базовую статистику
+            coaches_query = "SELECT COUNT(*) as count FROM Тренера"
+            athletes_query = "SELECT COUNT(*) as count FROM Спортсмены"
+            groups_query = "SELECT COUNT(*) as count FROM Группы"
+            
+            coaches_count = self.db_manager.execute_query(coaches_query, fetch=True)[0]['count']
+            athletes_count = self.db_manager.execute_query(athletes_query, fetch=True)[0]['count']
+            groups_count = self.db_manager.execute_query(groups_query, fetch=True)[0]['count']
+            
+            # Добавляем статистику в ListView
+            self.model_stats.appendRow(QStandardItem(f"Количество действующих тренеров: {coaches_count}"))
+            self.model_stats.appendRow(QStandardItem(f"Количество спортсменов: {athletes_count}"))
+            self.model_stats.appendRow(QStandardItem(f"Количество групп: {groups_count}"))
+            
+            # Добавляем посещаемость по группам
+            self.add_group_attendance_stats()
+            
+        except Exception as e:
+            raise Exception(f"Ошибка при обновлении общей статистики: {e}")
+
+    def add_group_attendance_stats(self):
+        selected_date = self.dateEdit_tab6.date()
+        start_of_month = selected_date.addDays(-selected_date.day() + 1)
+        end_of_month = start_of_month.addMonths(1).addDays(-1)
+        
+        # Запрос для подсчета посещаемости по группам
+        query = """
+        SELECT 
+            г.Название,
+            COUNT(DISTINCT с.id_Спортсмена) as total_athletes,
+            SUM(CASE WHEN п.Отметка = 1 THEN 1 ELSE 0 END) as total_visits,
+            (SELECT COUNT(DISTINCT Дата_время) 
+            FROM Посещаемость п2 
+            WHERE DATE(п2.Дата_время) BETWEEN %s AND %s) as total_trainings
+        FROM Группы г
+        LEFT JOIN Спортсмены с ON г.id_Группы = с.id_Группы
+        LEFT JOIN Посещаемость п ON с.id_Спортсмена = п.id_Спортсмена
+        AND DATE(п.Дата_время) BETWEEN %s AND %s
+        GROUP BY г.id_Группы, г.Название
+        """
+        
+        groups_data = self.db_manager.execute_query(
+            query, 
+            (start_of_month.toString('yyyy-MM-dd'), end_of_month.toString('yyyy-MM-dd'),
+            start_of_month.toString('yyyy-MM-dd'), end_of_month.toString('yyyy-MM-dd')),
+            fetch=True
+        )
+        
+        self.model_stats.appendRow(QStandardItem("\nПосещаемость по группам:"))
+        
+        for group in groups_data:
+            if group['total_athletes'] > 0 and group['total_trainings'] > 0:
+                attendance = (group['total_visits'] / 
+                            (group['total_athletes'] * group['total_trainings'])) * 100
+                self.model_stats.appendRow(
+                    QStandardItem(f"{group['Название']}: {attendance:.1f}%")
+                )
+
+    def update_attendance_table(self, selected_date, selected_group):
+        start_of_month = selected_date.addDays(-selected_date.day() + 1)
+        end_of_month = start_of_month.addMonths(1).addDays(-1)
+        
+        query = """
+        SELECT 
+            CONCAT(с.Фамилия, ' ', с.Имя, ' ', с.Отчество) as ФИО,
+            COUNT(п.Отметка) as visits,
+            COUNT(DISTINCT п.Дата_время) as total_trainings
+        FROM Спортсмены с
+        LEFT JOIN Посещаемость п ON с.id_Спортсмена = п.id_Спортсмена
+        AND DATE(п.Дата_время) BETWEEN %s AND %s
+        WHERE с.id_Группы = (SELECT id_Группы FROM Группы WHERE Название = %s)
+        GROUP BY с.id_Спортсмена, с.Фамилия, с.Имя, с.Отчество
+        """
+        
+        attendance_data = self.db_manager.execute_query(
+            query, 
+            (start_of_month.toString('yyyy-MM-dd'), 
+            end_of_month.toString('yyyy-MM-dd'),
+            selected_group),
+            fetch=True
+        )
+        
+        # Обновляем таблицу данными
+        self.tableWidget_tab6.setRowCount(len(attendance_data))
+        
+        for row, data in enumerate(attendance_data):
+            if data['total_trainings'] > 0:
+                attendance_percent = (data['visits'] / data['total_trainings']) * 100
+            else:
+                attendance_percent = 0
+                
+            self.tableWidget_tab6.setItem(row, 0, QTableWidgetItem(data['ФИО']))
+            self.tableWidget_tab6.setItem(row, 1, QTableWidgetItem(f"{attendance_percent:.1f}%"))
+
     def del_otchet_dialog(self):
         del_otchet = QDialog(self)
         uic.loadUi('forms/del_otchet.ui', del_otchet)
+        
         yes_button = del_otchet.findChild(QtWidgets.QPushButton, "pushButton_2")
         no_button = del_otchet.findChild(QtWidgets.QPushButton, "pushButton")
+        
         if yes_button:
-            yes_button.clicked.connect(del_otchet.close) ##Очищает поля отчетов
+            yes_button.clicked.connect(lambda: self.clear_reporting_data())
         if no_button:
             no_button.clicked.connect(del_otchet.close)
+        
         del_otchet.exec_()
+
+    def clear_reporting_data(self):
+        # Очищаем ListView
+        self.model_stats.clear()
+        
+        # Очищаем таблицу
+        self.tableWidget_tab6.clearContents()
+        self.tableWidget_tab6.setRowCount(0)
+        
+        # Сбрасываем дату и группу
+        self.dateEdit_tab6.setDate(QDate.currentDate())
+        self.grupaBox_tab6.setCurrentIndex(0)
+        
+        # Закрываем диалоговое окно
+        dialog = self.sender().parent() if self.sender() else None
+        if dialog:
+            dialog.close()
 
     def confirm_exit(self):
         logout_dialog = QDialog(self)
