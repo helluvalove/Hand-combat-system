@@ -74,15 +74,16 @@ class LoginSystem(QDialog):
             connection.close()
 
     def logout(self):
-        logout_dialog = QDialog(self)
-        uic.loadUi('forms/logoutsystem.ui', logout_dialog)
-        da_button = logout_dialog.findChild(QtWidgets.QPushButton, "pushButton_2")
-        net_button = logout_dialog.findChild(QtWidgets.QPushButton, "pushButton")
+        self.logout_dialog = QDialog(self)
+        uic.loadUi('forms/logoutsystem.ui', self.logout_dialog)
+        da_button = self.logout_dialog.findChild(QtWidgets.QPushButton, "pushButton_2")
+        net_button = self.logout_dialog.findChild(QtWidgets.QPushButton, "pushButton")
         if da_button:
             da_button.clicked.connect(self.exit_system)
+            self.logout_dialog.close()
         if net_button:
-            net_button.clicked.connect(logout_dialog.close)
-        logout_dialog.exec_()     
+            net_button.clicked.connect(self.logout_dialog.close)
+        self.logout_dialog.exec_()     
 
     def show_error_dialog(self):
         error_dialog = QDialog(self)
@@ -93,9 +94,7 @@ class LoginSystem(QDialog):
         error_dialog.exec_()
 
     def exit_system(self):
-        logout_dialog = self.logout_dialog()
-        logout_dialog.exec_()
-        self.close()
+        sys.exit()
 
 class CreateTren(QDialog, Ui_Createtren):
     def __init__(self, db_manager, parent=None):
@@ -532,11 +531,13 @@ class CreateGruppaDialog(QDialog, Ui_CreateGruppa):
 
     def setup_table(self):
         self.tableWidget.setColumnCount(3)  # Добавляем столбец для чекбокса
-        self.tableWidget.setHorizontalHeaderLabels(['Выбрать', 'ФИО', 'Дата рождения'])
+        self.tableWidget.setHorizontalHeaderLabels([' ', 'ФИО', 'Дата рождения'])
         self.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tableWidget.setFocusPolicy(Qt.NoFocus)
         self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)
         self.tableWidget.setEditTriggers(QTableWidget.NoEditTriggers)
+        header = self.tableWidget.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Fixed)
         
         self.tableWidget.setColumnWidth(0, 30)  # Ширина для чекбокса
         self.tableWidget.setColumnWidth(1, 365)
@@ -730,6 +731,8 @@ class EditGruppaDialog(QDialog, Ui_CreateGruppa):
         self.tableWidget.setFocusPolicy(Qt.NoFocus)
         self.tableWidget.setSelectionMode(QTableWidget.NoSelection)
         self.tableWidget.setSelectionBehavior(QTableWidget.SelectRows)
+        header = self.tableWidget.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Fixed)
         
         self.tableWidget.setColumnWidth(0, 30)
         self.tableWidget.setColumnWidth(1, 365)
@@ -902,13 +905,17 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
         self.number_coach.cursorPositionChanged.connect(self.adjust_cursor_position)
 
     def apply_input_mask(self):
-        if not self.number_coach.inputMask():  
+        # Если текст пустой, сбрасываем маску
+        if not self.number_coach.text():
+            self.number_coach.setInputMask("")
+            self.number_coach.setPlaceholderText("Номер телефона")
+        elif not self.number_coach.inputMask():
             self.number_coach.setInputMask('+7(999) 999-99-99')
-            self.number_coach.setCursorPosition(4) 
+            self.number_coach.setCursorPosition(4)
 
     def adjust_cursor_position(self):
-        if self.number_coach.cursorPosition() < 4:
-            self.number_coach.setCursorPosition(4)
+        if self.number_coach.cursorPosition() < 3:
+            self.number_coach.setCursorPosition(3)
 
         if self.view_mode:
             # Блокируем поля для редактирования и кнопку "Добавить"
@@ -929,8 +936,18 @@ class CreateCoachDialog(QDialog, Ui_CreateCoach):
         info = self.dopinfo_coach.toPlainText().strip()
         number = ''.join(filter(str.isdigit, self.number_coach.text()))
         
-        if number:
-            number = f'+7{number[1:]}' if number.startswith('7') else f'+7{number}'
+        if self.number_coach.text().replace('(', '').replace(')', '').replace('-', '').replace(' ', '').strip() == '+7':
+            number = ''  # Считаем поле пустым
+        else:
+            number = ''.join(filter(str.isdigit, self.number_coach.text()))
+            if number:
+                # Проверка на полноту номера (должно быть 11 цифр)
+                if len(number) != 11:
+                    QMessageBox.warning(self, "Ошибка", "Номер телефона введен не полностью!")
+                    return False
+                number = f'+7{number[1:]}' if number.startswith('7') else f'+7{number}'
+            else:
+                number = ''
 
         if not surname or not name:
             QMessageBox.warning(self, "Ошибка", "Фамилия и Имя обязательны для заполнения!")
@@ -1008,9 +1025,13 @@ class EditCoachDialog(QDialog, Ui_EditCoach):
         self.number_coach.cursorPositionChanged.connect(self.adjust_cursor_position)
 
     def apply_input_mask(self):
-        if not self.number_coach.inputMask():  
+        # Если текст пустой, сбрасываем маску
+        if not self.number_coach.text():
+            self.number_coach.setInputMask("")
+            self.number_coach.setPlaceholderText("Номер телефона")
+        elif not self.number_coach.inputMask():
             self.number_coach.setInputMask('+7(999) 999-99-99')
-            self.number_coach.setCursorPosition(3) 
+            self.number_coach.setCursorPosition(4)
 
     def adjust_cursor_position(self):
         if self.number_coach.cursorPosition() < 3:
@@ -1030,13 +1051,20 @@ class EditCoachDialog(QDialog, Ui_EditCoach):
         new_patronymic = self.otchestvo_coach.text().strip()
         new_info = self.dopinfo_coach.toPlainText().strip()
         
-        raw_number = ''.join(filter(str.isdigit, self.number_coach.text()))
-        if raw_number:
-            if raw_number.startswith('7'):
-                raw_number = raw_number[1:]
-            new_number = f'+7{raw_number}'
+        if self.number_coach.text().replace('(', '').replace(')', '').replace('-', '').replace(' ', '').strip() == '+7':
+            new_number = ''  # Считаем поле пустым
         else:
-            new_number = ''
+            raw_number = ''.join(filter(str.isdigit, self.number_coach.text()))
+            if raw_number:
+                # Проверка на полноту номера
+                if len(raw_number) != 11:
+                    QMessageBox.warning(self, "Ошибка", "Номер телефона введен не полностью!")
+                    return
+                if raw_number.startswith('7'):
+                    raw_number = raw_number[1:]
+                new_number = f'+7{raw_number}'
+            else:
+                new_number = ''
 
         if not new_surname or not new_name:
             QMessageBox.warning(self, "Ошибка", "Фамилия и Имя обязательны для заполнения!")
@@ -1159,8 +1187,9 @@ class MainWindow(QDialog, Ui_Mainwindow):
 
         self.addbutton_tab5.clicked.connect(self.create_gruppa_dialog)
         self.izmenbutton_tab5.clicked.connect(self.edit_group)
-        self.delbutton_tab5.clicked.connect(self.delete_group)
+        self.delbutton_tab5.clicked.connect(self.del_group_dialog)
 
+        self.clearbutton_tab6.clicked.connect(self.del_otchet_dialog)
         # Поиск для тренеров
         self.search_coach = QtWidgets.QLineEdit(self.tab_6)  # Привязываем к вкладке тренеров
         self.search_coach.setGeometry(QtCore.QRect(900, 20, 200, 30))
@@ -1196,7 +1225,6 @@ class MainWindow(QDialog, Ui_Mainwindow):
 
         self.grupaBox_tab2.setFocusPolicy(Qt.NoFocus)
         self.grupaBox_tab1.setFocusPolicy(Qt.NoFocus)
-        self.dateEdit_tab6.setFocusPolicy(Qt.NoFocus)
         self.grupaBox_tab6.setFocusPolicy(Qt.NoFocus)
 
         self.login_window = LoginSystem()
@@ -1897,18 +1925,37 @@ class MainWindow(QDialog, Ui_Mainwindow):
             QMessageBox.warning(self, "Ошибка", "Выберите спортсмена для удаления!")
             return
 
-        surname = self.tableWidget_tab4.item(selected_row, 0).text()  # Фамилия в первой колонке
-        name = self.tableWidget_tab4.item(selected_row, 1).text()     # Имя во второй колонке
-        patronymic = self.tableWidget_tab4.item(selected_row, 2).text()  # Отчество в третьей колонке
+        # Получаем ID спортсмена
+        get_id_query = """
+        SELECT id_Спортсмена 
+        FROM Спортсмены 
+        WHERE Фамилия = %s AND Имя = %s AND Отчество = %s
+        """
+        
+        surname = self.tableWidget_tab4.item(selected_row, 0).text()
+        name = self.tableWidget_tab4.item(selected_row, 1).text()
+        patronymic = self.tableWidget_tab4.item(selected_row, 2).text()
 
         try:
-            query = """
-            DELETE FROM Спортсмены 
-            WHERE Фамилия = %s AND Имя = %s AND Отчество = %s
-            """
-            self.db_manager.execute_query(query, (surname, name, patronymic))
-            self.load_sportmen()
-            
+            # Получаем ID спортсмена
+            result = self.db_manager.execute_query(get_id_query, (surname, name, patronymic), fetch=True)
+            if result:
+                athlete_id = result[0]['id_Спортсмена']
+                
+                # Удаляем записи посещаемости
+                self.db_manager.execute_query(
+                    "DELETE FROM Посещаемость WHERE id_Спортсмена = %s", 
+                    (athlete_id,)
+                )
+                
+                # Удаляем спортсмена
+                self.db_manager.execute_query(
+                    "DELETE FROM Спортсмены WHERE id_Спортсмена = %s", 
+                    (athlete_id,)
+                )
+                
+                self.load_sportmen()
+                
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось удалить спортсмена: {e}")
 
@@ -1924,6 +1971,19 @@ class MainWindow(QDialog, Ui_Mainwindow):
             no_button.clicked.connect(del_sportman.close)
         
         del_sportman.exec_()
+
+    def del_group_dialog(self):
+        del_group = QDialog(self)
+        uic.loadUi('forms/del_gruppa.ui', del_group)
+        yes_button = del_group.findChild(QtWidgets.QPushButton, "pushButton_2")
+        no_button = del_group.findChild(QtWidgets.QPushButton, "pushButton")
+
+        if yes_button:
+            yes_button.clicked.connect(lambda: (self.delete_group(), del_group.close()))
+        if no_button:
+            no_button.clicked.connect(del_group.close)
+
+        del_group.exec_()
 
     def create_gruppa_dialog(self):
         create_gruppa = CreateGruppaDialog(db_manager=self.db_manager, parent=self)
@@ -1953,6 +2013,8 @@ class MainWindow(QDialog, Ui_Mainwindow):
 
             self.tableWidget_tab5.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows) 
             self.tableWidget_tab5.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+            header = self.tableWidget_tab5.horizontalHeader()
+            header.setSectionResizeMode(QHeaderView.Fixed)
             
             # Fill table
             for row, group in enumerate(groups):
@@ -2021,8 +2083,6 @@ class MainWindow(QDialog, Ui_Mainwindow):
             self.load_sportmen()
             self.refresh_groups_tab2()  # Обновляем список групп в календаре
             self.load_groups_for_calendar()  # Обновляем список групп для календаря
-            
-            QMessageBox.information(self, "Успех", f"Группа {group_name} успешно удалена. Спортсмены этой группы сохранены в базе.")
             
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось удалить группу: {e}")
@@ -2113,37 +2173,30 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.load_attendance_table(group_id)
 
     def load_attendance_table(self, group_id):
-        # Получаем текущую дату и даты тренировок
         current_date = QDate.currentDate()
         training_dates = self.get_training_dates(group_id, current_date)
-        
-        # Получаем список спортсменов группы
         athletes = self.get_group_athletes(group_id)
         
-        # Настраиваем таблицу
+        # Setup table structure
         self.tableposeshaem.clear()
         self.tableposeshaem.setRowCount(len(athletes))
         self.tableposeshaem.setColumnCount(len(training_dates) + 1)
-        
-        # Устанавливаем заголовки
         headers = ['ФИО'] + training_dates
         self.tableposeshaem.setHorizontalHeaderLabels(headers)
         
-        # Заполняем ФИО спортсменов и создаем чекбоксы
+        # Fill table
         for row, athlete in enumerate(athletes):
-            # Добавляем ФИО
+            # Set athlete name
             self.tableposeshaem.setItem(row, 0, QTableWidgetItem(
                 f"{athlete['Фамилия']} {athlete['Имя']} {athlete['Отчество']}"
             ))
             
-            # Добавляем чекбоксы для каждой даты
+            # Add checkboxes
             for col, date in enumerate(training_dates, start=1):
                 checkbox = QCheckBox()
-                # Преобразуем дату тренировки в QDate
                 training_date = QDate.fromString(date, 'dd.MM')
                 training_date = QDate(current_date.year(), training_date.month(), training_date.day())
                 
-                # Делаем чекбокс неактивным для будущих дат
                 if training_date > current_date:
                     checkbox.setEnabled(False)
                     
@@ -2152,38 +2205,15 @@ class MainWindow(QDialog, Ui_Mainwindow):
                     lambda state, r=row, c=col: self.on_attendance_changed(r, c, state)
                 )
         
-        # Загружаем существующие отметки посещаемости
+        # Load existing marks
         self.load_attendance_marks(group_id, training_dates, athletes)
         
-        # Устанавливаем ширину колонок
+        # Set column widths
         self.tableposeshaem.setColumnWidth(0, 300)
         for col in range(1, len(training_dates) + 1):
             self.tableposeshaem.setColumnWidth(col, 80)
-
-    def setup_attendance_table(self, training_dates, athletes):
-        self.tableposeshaem.clear()
-        self.tableposeshaem.setRowCount(len(athletes))
-        self.tableposeshaem.setColumnCount(len(training_dates) + 1)
-        
-        # Устанавливаем заголовки
-        headers = ['ФИО'] + training_dates  # Даты уже в нужном формате
-        self.tableposeshaem.setHorizontalHeaderLabels(headers)
-        self.tableposeshaem.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.tableposeshaem.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Fixed)
-
-        # Заполняем ФИО спортсменов
-        for row, athlete in enumerate(athletes):
-            self.tableposeshaem.setItem(row, 0, QTableWidgetItem(
-                f"{athlete['Фамилия']} {athlete['Имя']} {athlete['Отчество']}"
-            ))
-            
-            # Добавляем чекбоксы для каждой даты
-            for col in range(1, len(training_dates) + 1):
-                checkbox = QCheckBox()
-                self.tableposeshaem.setCellWidget(row, col, checkbox)
-                checkbox.stateChanged.connect(
-                    lambda state, r=row, c=col: self.on_attendance_changed(r, c, state)
-                )
+        header = self.tableposeshaem.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Fixed)
 
     def after_athlete_added(self):
         group_id = self.grupaBox_tab1.currentData()
@@ -2228,13 +2258,14 @@ class MainWindow(QDialog, Ui_Mainwindow):
         SELECT id_Спортсмена, DATE(Дата_время) as Дата, Отметка 
         FROM Посещаемость 
         WHERE id_Группы = %s
+        AND DATE(Дата_время) <= CURDATE()
         """
         attendance_records = self.db_manager.execute_query(query, (group_id,), fetch=True)
         
         # Создаем словарь для быстрого доступа к отметкам
         attendance_dict = {}
         for record in attendance_records:
-            date_str = record['Дата'].strftime('%d.%m')  # Преобразуем дату в формат дд.мм
+            date_str = record['Дата'].strftime('%d.%m')
             key = (record['id_Спортсмена'], date_str)
             attendance_dict[key] = record['Отметка']
         
@@ -2273,17 +2304,26 @@ class MainWindow(QDialog, Ui_Mainwindow):
         # Настраиваем ListView для общей статистики
         self.model_stats = QStandardItemModel()
         self.listView_tab6.setModel(self.model_stats)
+        self.listView_tab6.setFocusPolicy(Qt.NoFocus)
+        self.listView_tab6.setSelectionMode(QAbstractItemView.NoSelection)
+        self.listView_tab6.setEditTriggers(QTableWidget.NoEditTriggers)
         self.load_groups_for_reporting()
         # Настраиваем таблицу посещаемости
         self.tableWidget_tab6.setColumnCount(2)
         self.tableWidget_tab6.setHorizontalHeaderLabels(['ФИО', 'Посещаемость, %'])
-        self.tableWidget_tab6.setColumnWidth(0, 450)
-        self.tableWidget_tab6.setColumnWidth(1, 200)
+        self.tableWidget_tab6.setColumnWidth(0, 500)
+        self.tableWidget_tab6.setColumnWidth(1, 130)
+        self.tableWidget_tab6.setFocusPolicy(Qt.NoFocus)
+        self.tableWidget_tab6.setSelectionMode(QAbstractItemView.NoSelection)
+        self.tableWidget_tab6.setEditTriggers(QTableWidget.NoEditTriggers)
+
+        header = self.tableWidget_tab6.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Fixed)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
         
         # Подключаем сигналы
         self.dateEdit_tab6.dateChanged.connect(self.update_reporting)
         self.grupaBox_tab6.currentIndexChanged.connect(self.update_reporting)
-        self.clearbutton_tab6.clicked.connect(self.del_otchet_dialog)
 
     def update_reporting(self):
         selected_date = self.dateEdit_tab6.date()
@@ -2296,6 +2336,32 @@ class MainWindow(QDialog, Ui_Mainwindow):
             self.update_attendance_table(selected_date, selected_group)
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось обновить отчетность: {e}")
+
+        for row in range(self.tableWidget_tab6.rowCount()):
+            attendance_item = self.tableWidget_tab6.item(row, 1)
+            if attendance_item:
+                attendance = float(attendance_item.text().replace('%', ''))
+                color = self.get_color_for_attendance(attendance)
+                for col in range(self.tableWidget_tab6.columnCount()):
+                    self.tableWidget_tab6.item(row, col).setForeground(color)
+        
+        # For groups in listView_tab6
+        for row in range(self.model_stats.rowCount()):
+            item = self.model_stats.item(row)
+            if item:
+                text = item.text()
+                if '%' in text:
+                    attendance = float(text.split(':')[1].replace('%', '').strip())
+                    color = self.get_color_for_attendance(attendance)
+                    item.setForeground(color)
+
+    def get_color_for_attendance(self, attendance):
+        if attendance >= 65:
+            return QtGui.QColor(0, 128, 0)  # Dark green
+        elif 38 <= attendance < 65:
+            return QtGui.QColor(184, 134, 11)  # Dark goldenrod
+        else:
+            return QtGui.QColor(178, 34, 34)  # Firebrick red
 
     def update_general_stats(self):
         try:
@@ -2376,11 +2442,12 @@ class MainWindow(QDialog, Ui_Mainwindow):
         query = """
         SELECT 
             CONCAT(с.Фамилия, ' ', с.Имя, ' ', с.Отчество) as ФИО,
-            COUNT(п.Отметка) as visits,
-            COUNT(DISTINCT п.Дата_время) as total_trainings
+            SUM(CASE WHEN п.Отметка = 1 THEN 1 ELSE 0 END) as visits,
+            COUNT(п.Отметка) as total_trainings
         FROM Спортсмены с
         LEFT JOIN Посещаемость п ON с.id_Спортсмена = п.id_Спортсмена
         AND DATE(п.Дата_время) BETWEEN %s AND %s
+        AND DATE(п.Дата_время) <= CURDATE()
         WHERE с.id_Группы = (SELECT id_Группы FROM Группы WHERE Название = %s)
         GROUP BY с.id_Спортсмена, с.Фамилия, с.Имя, с.Отчество
         """
@@ -2393,7 +2460,6 @@ class MainWindow(QDialog, Ui_Mainwindow):
             fetch=True
         )
         
-        # Обновляем таблицу данными
         self.tableWidget_tab6.setRowCount(len(attendance_data))
         
         for row, data in enumerate(attendance_data):
@@ -2413,25 +2479,22 @@ class MainWindow(QDialog, Ui_Mainwindow):
         no_button = del_otchet.findChild(QtWidgets.QPushButton, "pushButton")
         
         if yes_button:
-            yes_button.clicked.connect(lambda: self.clear_reporting_data())
+            yes_button.clicked.connect(self.clear_reporting_data)
         if no_button:
             no_button.clicked.connect(del_otchet.close)
         
         del_otchet.exec_()
 
     def clear_reporting_data(self):
-        # Очищаем ListView
-        self.model_stats.clear()
+        with QtCore.QSignalBlocker(self.dateEdit_tab6), QtCore.QSignalBlocker(self.grupaBox_tab6):
+
+            self.model_stats.removeRows(0, self.model_stats.rowCount())
+            self.tableWidget_tab6.clearContents()
+            self.tableWidget_tab6.setRowCount(0)
+            
+            self.dateEdit_tab6.setDate(QDate.currentDate())
+            self.grupaBox_tab6.setCurrentIndex(0)
         
-        # Очищаем таблицу
-        self.tableWidget_tab6.clearContents()
-        self.tableWidget_tab6.setRowCount(0)
-        
-        # Сбрасываем дату и группу
-        self.dateEdit_tab6.setDate(QDate.currentDate())
-        self.grupaBox_tab6.setCurrentIndex(0)
-        
-        # Закрываем диалоговое окно
         dialog = self.sender().parent() if self.sender() else None
         if dialog:
             dialog.close()

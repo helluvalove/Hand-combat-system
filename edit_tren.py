@@ -27,7 +27,6 @@ class Ui_EditTren(object):
         self.dateTimeEdit_soztren.setMinimumDate(QtCore.QDate(2024, 1, 1))
         self.dateTimeEdit_soztren.setCalendarPopup(True)
         self.dateTimeEdit_soztren.setObjectName("dateTimeEdit_soztren")
-        self.dateTimeEdit_soztren.setFocusPolicy(Qt.NoFocus)
         self.name_tren = QtWidgets.QLineEdit(parent=Dialog)
         self.name_tren.setGeometry(QtCore.QRect(25, 40, 331, 31))
         self.name_tren.setStyleSheet("#name_tren {\n"

@@ -78,7 +78,9 @@ class Ui_SportMan(object):
         self.datebirth_sportman = QtWidgets.QDateEdit(parent=Dialog)
         self.datebirth_sportman.setGeometry(QtCore.QRect(22, 146, 110, 24))
         self.datebirth_sportman.setObjectName("datebirth_sportman")
-        self.datebirth_sportman.setFocusPolicy(Qt.NoFocus)
+        self.datebirth_sportman.setMaximumDate(QtCore.QDate.currentDate())
+        minimum_date = QtCore.QDate.currentDate().addYears(-100)
+        self.datebirth_sportman.setMinimumDate(minimum_date)
         self.label_2 = QtWidgets.QLabel(parent=Dialog)
         self.label_2.setGeometry(QtCore.QRect(24, 125, 161, 16))
         self.label_2.setStyleSheet("#label_2 {\n"

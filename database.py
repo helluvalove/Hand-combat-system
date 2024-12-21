@@ -44,7 +44,7 @@ class DatabaseManager:
         
     def insert_trainer(self, surname, name, patronymic, info):
         query = """
-            INSERT INTO Тренера (Имя, Фамилия, Отчество, Доп_информация)
+            INSERT INTO Тренера (Фамилия, Имя, Отчество, Доп_информация)
             VALUES (%s, %s, %s, %s)
         """
         return self.execute_query(query, (name, surname, patronymic, info))

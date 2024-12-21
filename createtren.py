@@ -56,7 +56,6 @@ class Ui_Createtren(object):
         self.dateTimeEdit_soztren.setMinimumDate(QtCore.QDate(2024, 1, 1))
         self.dateTimeEdit_soztren.setCalendarPopup(True)
         self.dateTimeEdit_soztren.setObjectName("dateTimeEdit_soztren")
-        self.dateTimeEdit_soztren.setFocusPolicy(Qt.NoFocus)
         self.addbutton_soztren = QtWidgets.QPushButton(Dialog)
         self.addbutton_soztren.setGeometry(QtCore.QRect(290, 250, 85, 25))
         self.addbutton_soztren.setStyleSheet("#addbutton_soztren {\n"
