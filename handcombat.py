@@ -2250,8 +2250,10 @@ class MainWindow(QDialog, Ui_Mainwindow):
     def refresh_groups_combobox(self):
         current_group_id = self.grupaBox_tab1.currentData()
         current_group_id2 = self.grupaBox_tab2.currentData()
+        current_group_tab6 = self.grupaBox_tab6.currentText() if self.grupaBox_tab6.currentText() else "Все группы"
         
         self.load_groups_to_combobox()
+        self.load_groups_for_reporting()
         
         # Восстанавливаем выбранную группу для первого комбобокса
         index = self.grupaBox_tab1.findData(current_group_id)
@@ -2263,11 +2265,15 @@ class MainWindow(QDialog, Ui_Mainwindow):
         if index2 >= 0:
             self.grupaBox_tab2.setCurrentIndex(index2)
 
+        index6 = self.grupaBox_tab6.findText(current_group_tab6)
+        if index6 >= 0:
+            self.grupaBox_tab6.setCurrentIndex(index6)
+
     def setup_reporting_tab(self):
         # Настраиваем ListView для общей статистики
         self.model_stats = QStandardItemModel()
         self.listView_tab6.setModel(self.model_stats)
-        
+        self.load_groups_for_reporting()
         # Настраиваем таблицу посещаемости
         self.tableWidget_tab6.setColumnCount(2)
         self.tableWidget_tab6.setHorizontalHeaderLabels(['ФИО', 'Посещаемость, %'])
@@ -2314,6 +2320,16 @@ class MainWindow(QDialog, Ui_Mainwindow):
             
         except Exception as e:
             raise Exception(f"Ошибка при обновлении общей статистики: {e}")
+
+    def load_groups_for_reporting(self):
+        query = "SELECT id_Группы, Название FROM Группы"
+        groups = self.db_manager.execute_query(query, fetch=True)
+        
+        self.grupaBox_tab6.clear()
+        self.grupaBox_tab6.addItem("Все группы")  # Optional default item
+        
+        for group in groups:
+            self.grupaBox_tab6.addItem(group['Название'])
 
     def add_group_attendance_stats(self):
         selected_date = self.dateEdit_tab6.date()
