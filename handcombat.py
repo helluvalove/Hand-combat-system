@@ -14,6 +14,8 @@ from create_coach import Ui_CreateCoach
 from edit_coach import Ui_EditCoach
 from edit_sportman import Ui_EditSportman
 
+ENCRYPTION_KEY = b't3KB2lvpMsmVMH-uRPrLwp_mfIhbQwGsOx3oANi3aiY='
+
 def connect_to_db():
     try:
         connection = pymysql.connect(
@@ -31,66 +33,68 @@ def connect_to_db():
         return None
 
 class LoginSystem(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, db_manager: DatabaseManager, parent=None):
         super().__init__(parent)
         uic.loadUi('forms/loginform.ui', self)
-        self.pushButton.clicked.connect(self.login)  
-        self.pushButton_2.clicked.connect(self.logout)  
+        
+        self.db_manager = db_manager
+        
+        self.pushButton.clicked.connect(self.login)
+        self.pushButton_2.clicked.connect(self.logout)
 
         no_space_validator = QRegExpValidator(QRegExp(r"[^\s]*"))
         self.lineEdit.setValidator(no_space_validator)
         self.lineEdit_2.setValidator(no_space_validator)
 
-        self.lineEdit.setMaxLength(15)  
+        self.lineEdit.setMaxLength(15)
         self.lineEdit_2.setMaxLength(20)
 
     def login(self):
-        username = self.lineEdit.text()  
-        password = self.lineEdit_2.text()  
-        connection = connect_to_db()  # Подключаемся к БД
-        if not connection:
-            QMessageBox.critical(self, "Ошибка", "Не удалось подключиться к базе данных!")
-            return
-
+        username = self.lineEdit.text()
+        password = self.lineEdit_2.text()
+        
         try:
-            with connection.cursor() as cursor:
-                # Запрос для поиска пользователя по логину
-                query = "SELECT password FROM admin_user WHERE login = %s"
-                cursor.execute(query, (username,))
-                result = cursor.fetchone()  # Получаем первую строку результата
+            query = "SELECT * FROM admin_user"
+            results = self.db_manager.execute_query(query, fetch=True)
+            result = results[0]
+            
+            # Decrypt stored credentials
+            stored_login = self.db_manager.crypto.decrypt(result['login'])
+            stored_password = self.db_manager.crypto.decrypt(result['password'])
+            
+            if username == stored_login.decode() and password == stored_password.decode():
+                print("Успешная авторизация!")
+                self.accept()
+            else:
+                print("Неверные учетные данные")
+                self.show_error_dialog()
 
-                if result:
-                    # Сравнение пароля (с хэшированием)
-                    stored_password = result['password']
-                    if password == stored_password:  # Для хэшированных паролей нужно использовать bcrypt
-                        self.accept()
-                    else:
-                        self.show_error_dialog()
-                else:
-                    self.show_error_dialog()
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Ошибка запроса к базе данных: {e}")
-        finally:
-            connection.close()
+            QMessageBox.critical(self, "Ошибка", f"Ошибка аутентификации: {e}")
 
     def logout(self):
         self.logout_dialog = QDialog(self)
         uic.loadUi('forms/logoutsystem.ui', self.logout_dialog)
+        
         da_button = self.logout_dialog.findChild(QtWidgets.QPushButton, "pushButton_2")
         net_button = self.logout_dialog.findChild(QtWidgets.QPushButton, "pushButton")
+        
         if da_button:
             da_button.clicked.connect(self.exit_system)
             self.logout_dialog.close()
         if net_button:
             net_button.clicked.connect(self.logout_dialog.close)
-        self.logout_dialog.exec_()     
+            
+        self.logout_dialog.exec_()
 
     def show_error_dialog(self):
         error_dialog = QDialog(self)
         uic.loadUi('forms/errorlogin.ui', error_dialog)
+        
         ok_button = error_dialog.findChild(QtWidgets.QPushButton, "pushButton")
         if ok_button:
             ok_button.clicked.connect(error_dialog.close)
+            
         error_dialog.exec_()
 
     def exit_system(self):
@@ -198,11 +202,32 @@ class CreateTren(QDialog, Ui_Createtren):
             trainer_id = self.trainer_ids[trainer]
             group_id = self.group_ids[group]
             
+            # Создаем тренировку
             query = """
             INSERT INTO Расписание_тренировок (Название, id_Тренера, id_Группы, Дата_время)
             VALUES (%s, %s, %s, %s)
             """
             self.db_manager.execute_query(query, (name, trainer_id, group_id, datetime))
+
+            # Получаем всех спортсменов группы
+            query_athletes = """
+            SELECT id_Спортсмена 
+            FROM Спортсмены 
+            WHERE id_Группы = %s
+            """
+            athletes = self.db_manager.execute_query(query_athletes, (group_id,), fetch=True)
+
+            # Создаем записи с нулевыми отметками для всех спортсменов
+            insert_attendance = """
+            INSERT INTO Посещаемость (id_Спортсмена, id_Группы, Дата_время, Отметка)
+            VALUES (%s, %s, %s, 0)
+            """
+            for athlete in athletes:
+                self.db_manager.execute_query(
+                    insert_attendance, 
+                    (athlete['id_Спортсмена'], group_id, datetime)
+                )
+
             self.accept()
             
         except Exception as e:
@@ -452,7 +477,7 @@ class EditSportMan(QDialog, Ui_EditSportman):
         new_birth_date = self.datebirth_sportman.date().toString("yyyy-MM-dd")
         new_rank = self.sportrazrBox.currentText()
 
-        if not all([new_name, new_surname]) or new_group == "Выберите группу":
+        if not all([new_name, new_surname]):
             QMessageBox.warning(self, "Ошибка", "Заполните все обязательные поля!")
             return
 
@@ -461,16 +486,19 @@ class EditSportMan(QDialog, Ui_EditSportman):
             return
 
         try:
-            group_id = self.group_ids[new_group]
+            # Handle "Без группы" case
+            group_id = self.group_ids.get(new_group) if new_group != "Без группы" else None
+            
             update_query = """
             UPDATE Спортсмены 
             SET Фамилия = %s, Имя = %s, Отчество = %s, 
                 id_Группы = %s, Дата_рождения = %s, Спортивный_разряд = %s
             WHERE id_Спортсмена = %s
             """
+            
             params = (new_name, new_surname, new_patronymic, 
-                     group_id, new_birth_date, new_rank, 
-                     self.current_sportsman_id)
+                    group_id, new_birth_date, new_rank, 
+                    self.current_sportsman_id)
             
             self.db_manager.execute_query(update_query, params)
             self.accept()
@@ -1127,8 +1155,16 @@ class MainWindow(QDialog, Ui_Mainwindow):
             user="root",
             password="qwerty123",
             db_name="hand_combat",
-            charset="utf8mb4"
+            charset="utf8mb4",
+            encryption_key=ENCRYPTION_KEY
         )
+
+        encrypted_login = self.db_manager.crypto.encrypt('admin'.encode())
+        encrypted_password = self.db_manager.crypto.encrypt('123'.encode())
+
+        # Обновляем значения в базе данных
+        query = "UPDATE admin_user SET login = %s, password = %s WHERE id = 2"
+        self.db_manager.execute_query(query, (encrypted_login, encrypted_password))
         self.load_trainers()
         self.load_groups()
         self.load_sportmen()
@@ -1227,7 +1263,7 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.grupaBox_tab1.setFocusPolicy(Qt.NoFocus)
         self.grupaBox_tab6.setFocusPolicy(Qt.NoFocus)
 
-        self.login_window = LoginSystem()
+        self.login_window = LoginSystem(self.db_manager)
         if self.login_window.exec_() != QDialog.Accepted:
             return  
         self.show()
@@ -1577,6 +1613,7 @@ class MainWindow(QDialog, Ui_Mainwindow):
         selected_group = self.grupaBox_tab2.currentText()
         group_id = self.calendar_group_ids[selected_group]
         
+        # Получаем id тренировки
         query = """
         SELECT id_Тренировки
         FROM Расписание_тренировок
@@ -1585,17 +1622,30 @@ class MainWindow(QDialog, Ui_Mainwindow):
         result = self.db_manager.execute_query(query, (selected_date.toPyDate(), group_id), fetch=True)
         
         if result:
+            training_id = result[0]['id_Тренировки']
+            
+            # Сначала удаляем записи посещаемости
+            delete_attendance_query = """
+            DELETE FROM Посещаемость
+            WHERE DATE(Дата_время) = %s AND id_Группы = %s
+            """
+            self.db_manager.execute_query(delete_attendance_query, (selected_date.toPyDate(), group_id))
+            
+            # Затем удаляем тренировку
             delete_query = """
             DELETE FROM Расписание_тренировок
             WHERE id_Тренировки = %s
             """
-            self.db_manager.execute_query(delete_query, (result[0]['id_Тренировки'],))
+            self.db_manager.execute_query(delete_query, (training_id,))
             
             # Очищаем подсветку для удаленной даты
             format = QtGui.QTextCharFormat()
             self.calendarWidget.setDateTextFormat(selected_date, format)
             
             self.load_calendar_trainings(group_id)
+            
+            # Обновляем таблицу посещаемости
+            self.refresh_attendance_list()
         else:
             QMessageBox.warning(self, "Внимание", "На выбранную дату нет тренировок!")
 
@@ -2070,19 +2120,28 @@ class MainWindow(QDialog, Ui_Mainwindow):
         group_name = self.tableWidget_tab5.item(selected_row, 1).text()
         
         try:
+            # Удаляем записи посещаемости
+            delete_attendance_query = "DELETE FROM Посещаемость WHERE id_Группы = %s"
+            self.db_manager.execute_query(delete_attendance_query, (group_id,))
+            
+            # Удаляем записи из расписания тренировок
+            delete_schedule_query = "DELETE FROM Расписание_тренировок WHERE id_Группы = %s"
+            self.db_manager.execute_query(delete_schedule_query, (group_id,))
+            
             # Обновляем записи спортсменов
-            update_query = "UPDATE Спортсмены SET id_Группы = NULL WHERE id_Группы = %s"
-            self.db_manager.execute_query(update_query, (group_id,))
+            update_athletes_query = "UPDATE Спортсмены SET id_Группы = NULL WHERE id_Группы = %s"
+            self.db_manager.execute_query(update_athletes_query, (group_id,))
             
             # Удаляем группу
-            delete_query = "DELETE FROM Группы WHERE id_Группы = %s"
-            self.db_manager.execute_query(delete_query, (group_id,))
+            delete_group_query = "DELETE FROM Группы WHERE id_Группы = %s"
+            self.db_manager.execute_query(delete_group_query, (group_id,))
             
             # Обновляем все списки
             self.load_groups()
             self.load_sportmen()
-            self.refresh_groups_tab2()  # Обновляем список групп в календаре
-            self.load_groups_for_calendar()  # Обновляем список групп для календаря
+            self.refresh_groups_tab2()
+            self.load_groups_for_calendar()
+            self.refresh_groups_combobox()
             
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось удалить группу: {e}")
@@ -2258,25 +2317,34 @@ class MainWindow(QDialog, Ui_Mainwindow):
         SELECT id_Спортсмена, DATE(Дата_время) as Дата, Отметка 
         FROM Посещаемость 
         WHERE id_Группы = %s
-        AND DATE(Дата_время) <= CURDATE()
         """
         attendance_records = self.db_manager.execute_query(query, (group_id,), fetch=True)
         
-        # Создаем словарь для быстрого доступа к отметкам
+        # Create dictionary for quick access to marks
         attendance_dict = {}
         for record in attendance_records:
             date_str = record['Дата'].strftime('%d.%m')
             key = (record['id_Спортсмена'], date_str)
             attendance_dict[key] = record['Отметка']
         
-        # Устанавливаем состояние чекбоксов
+        current_date = QDate.currentDate()
+        
+        # Set checkbox states
         for row, athlete in enumerate(athletes):
             for col, date in enumerate(training_dates, start=1):
                 checkbox = self.tableposeshaem.cellWidget(row, col)
                 if checkbox:
-                    key = (athlete['id_Спортсмена'], date)
-                    is_checked = attendance_dict.get(key, 0) == 1
-                    checkbox.setChecked(is_checked)
+                    training_date = QDate.fromString(date, 'dd.MM')
+                    training_date = training_date.addYears(current_date.year() - training_date.year())
+                    
+                    # Disable checkbox for future dates
+                    if training_date > current_date:
+                        checkbox.setEnabled(False)
+                    else:
+                        checkbox.setEnabled(True)
+                        key = (athlete['id_Спортсмена'], date)
+                        is_checked = attendance_dict.get(key, 0) == 1
+                        checkbox.setChecked(is_checked)
 
     def refresh_groups_combobox(self):
         current_group_id = self.grupaBox_tab1.currentData()
@@ -2402,32 +2470,33 @@ class MainWindow(QDialog, Ui_Mainwindow):
         start_of_month = selected_date.addDays(-selected_date.day() + 1)
         end_of_month = start_of_month.addMonths(1).addDays(-1)
         
-        # Запрос для подсчета посещаемости по группам
         query = """
         SELECT 
             г.Название,
             COUNT(DISTINCT с.id_Спортсмена) as total_athletes,
-            SUM(CASE WHEN п.Отметка = 1 THEN 1 ELSE 0 END) as total_visits,
-            (SELECT COUNT(DISTINCT Дата_время) 
-            FROM Посещаемость п2 
-            WHERE DATE(п2.Дата_время) BETWEEN %s AND %s) as total_trainings
+            SUM(CASE WHEN п.Отметка = 1 AND DATE(п.Дата_время) <= CURRENT_DATE() THEN 1 ELSE 0 END) as total_visits,
+            COUNT(DISTINCT CASE WHEN DATE(п.Дата_время) <= CURRENT_DATE() THEN DATE(п.Дата_время) END) as total_trainings
         FROM Группы г
         LEFT JOIN Спортсмены с ON г.id_Группы = с.id_Группы
-        LEFT JOIN Посещаемость п ON с.id_Спортсмена = п.id_Спортсмена
-        AND DATE(п.Дата_время) BETWEEN %s AND %s
+        LEFT JOIN Посещаемость п ON с.id_Спортсмена = п.id_Спортсмена 
+            AND DATE(п.Дата_время) BETWEEN %s AND %s
         GROUP BY г.id_Группы, г.Название
-        """
+            """
         
         groups_data = self.db_manager.execute_query(
-            query, 
-            (start_of_month.toString('yyyy-MM-dd'), end_of_month.toString('yyyy-MM-dd'),
-            start_of_month.toString('yyyy-MM-dd'), end_of_month.toString('yyyy-MM-dd')),
+            query,
+            (start_of_month.toString('yyyy-MM-dd'), end_of_month.toString('yyyy-MM-dd')),
             fetch=True
         )
         
         self.model_stats.appendRow(QStandardItem("\nПосещаемость по группам:"))
         
         for group in groups_data:
+            print(f"Группа: {group['Название']}")
+            print(f"Всего спортсменов: {group['total_athletes']}")
+            print(f"Всего посещений: {group['total_visits']}")
+            print(f"Всего тренировок: {group['total_trainings']}")
+            
             if group['total_athletes'] > 0 and group['total_trainings'] > 0:
                 attendance = (group['total_visits'] / 
                             (group['total_athletes'] * group['total_trainings'])) * 100
@@ -2435,23 +2504,50 @@ class MainWindow(QDialog, Ui_Mainwindow):
                     QStandardItem(f"{group['Название']}: {attendance:.1f}%")
                 )
 
+    def verify_attendance(self, athlete_id, group_id, date):
+        query = """
+        SELECT Отметка 
+        FROM Посещаемость 
+        WHERE id_Спортсмена = %s 
+        AND id_Группы = %s 
+        AND DATE(Дата_время) = %s
+        """
+        result = self.db_manager.execute_query(query, (athlete_id, group_id, date), fetch=True)
+        return result[0]['Отметка'] if result else None
+
     def update_attendance_table(self, selected_date, selected_group):
         start_of_month = selected_date.addDays(-selected_date.day() + 1)
         end_of_month = start_of_month.addMonths(1).addDays(-1)
-        
+
+        print(f"Период: с {start_of_month.toString('yyyy-MM-dd')} по {end_of_month.toString('yyyy-MM-dd')}")
+        print(f"Выбранная группа: {selected_group}")
+
         query = """
+        WITH ПосещенияСпортсменов AS (
+            SELECT 
+                с.id_Спортсмена,
+                CONCAT(с.Фамилия, ' ', с.Имя, ' ', с.Отчество) as ФИО,
+                COUNT(DISTINCT rt.Дата_время) as total_trainings,
+                COUNT(DISTINCT CASE WHEN п.Отметка = 1 THEN п.Дата_время END) as visits
+            FROM Спортсмены с
+            JOIN Группы г ON с.id_Группы = г.id_Группы
+            LEFT JOIN Расписание_тренировок rt ON г.id_Группы = rt.id_Группы 
+                AND DATE(rt.Дата_время) BETWEEN %s AND %s
+                AND DATE(rt.Дата_время) <= CURRENT_DATE()
+            LEFT JOIN Посещаемость п ON с.id_Спортсмена = п.id_Спортсмена 
+                AND DATE(п.Дата_время) = DATE(rt.Дата_время)
+            WHERE г.Название = %s
+            GROUP BY с.id_Спортсмена, с.Фамилия, с.Имя, с.Отчество
+        )
         SELECT 
-            CONCAT(с.Фамилия, ' ', с.Имя, ' ', с.Отчество) as ФИО,
-            SUM(CASE WHEN п.Отметка = 1 THEN 1 ELSE 0 END) as visits,
-            COUNT(п.Отметка) as total_trainings
-        FROM Спортсмены с
-        LEFT JOIN Посещаемость п ON с.id_Спортсмена = п.id_Спортсмена
-        AND DATE(п.Дата_время) BETWEEN %s AND %s
-        AND DATE(п.Дата_время) <= CURDATE()
-        WHERE с.id_Группы = (SELECT id_Группы FROM Группы WHERE Название = %s)
-        GROUP BY с.id_Спортсмена, с.Фамилия, с.Имя, с.Отчество
+            id_Спортсмена,
+            ФИО,
+            visits,
+            total_trainings
+        FROM ПосещенияСпортсменов
+        ORDER BY ФИО
         """
-        
+
         attendance_data = self.db_manager.execute_query(
             query, 
             (start_of_month.toString('yyyy-MM-dd'), 
@@ -2459,17 +2555,39 @@ class MainWindow(QDialog, Ui_Mainwindow):
             selected_group),
             fetch=True
         )
-        
+
+        # Отладочный вывод
+        for data in attendance_data:
+            print(f"Спортсмен ID: {data['id_Спортсмена']}")
+            print(f"ФИО: {data['ФИО']}")
+            print(f"Посещений: {data['visits']}")
+            print(f"Всего тренировок: {data['total_trainings']}")
+            print("---")
+
         self.tableWidget_tab6.setRowCount(len(attendance_data))
         
         for row, data in enumerate(attendance_data):
+            attendance_percent = 0
             if data['total_trainings'] > 0:
                 attendance_percent = (data['visits'] / data['total_trainings']) * 100
-            else:
-                attendance_percent = 0
                 
-            self.tableWidget_tab6.setItem(row, 0, QTableWidgetItem(data['ФИО']))
-            self.tableWidget_tab6.setItem(row, 1, QTableWidgetItem(f"{attendance_percent:.1f}%"))
+            name_item = QTableWidgetItem(data['ФИО'])
+            percent_item = QTableWidgetItem(f"{attendance_percent:.1f}%")
+            
+            self.tableWidget_tab6.setItem(row, 0, name_item)
+            self.tableWidget_tab6.setItem(row, 1, percent_item)
+
+    def check_athlete_attendance(self, athlete_id, start_date, end_date):
+        query = """
+        SELECT 
+            DATE(Дата_время) as date,
+            Отметка
+        FROM Посещаемость
+        WHERE id_Спортсмена = %s
+        AND DATE(Дата_время) BETWEEN %s AND %s
+        ORDER BY Дата_время
+        """
+        return self.db_manager.execute_query(query, (athlete_id, start_date, end_date), fetch=True)
 
     def del_otchet_dialog(self):
         del_otchet = QDialog(self)
