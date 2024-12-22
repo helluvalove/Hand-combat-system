@@ -1,9 +1,9 @@
-import sys
+import sys, os
 import pymysql
 from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from PyQt5.QtCore import QRegExp, QDate, Qt
 from PyQt5.QtGui import QRegExpValidator, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton, QTableWidgetItem, QHeaderView, QTableWidget, QAbstractItemView, QCheckBox, QWidget, QHBoxLayout, QCalendarWidget
+from PyQt5.QtWidgets import QApplication, QFileDialog, QDialog, QMessageBox, QPushButton, QTableWidgetItem, QHeaderView, QTableWidget, QAbstractItemView, QCheckBox, QWidget, QHBoxLayout, QCalendarWidget
 from database import DatabaseManager
 from newmainwindow import Ui_Mainwindow
 from createtren import Ui_Createtren
@@ -1170,6 +1170,7 @@ class MainWindow(QDialog, Ui_Mainwindow):
         self.load_sportmen()
         self.load_trainings
         self.load_groups_for_calendar()
+        self.setup_backup_button()
         
         self.setup_attendance_tab()
         self.rank_sort_order = Qt.AscendingOrder
@@ -2616,6 +2617,56 @@ class MainWindow(QDialog, Ui_Mainwindow):
         dialog = self.sender().parent() if self.sender() else None
         if dialog:
             dialog.close()
+
+    def setup_backup_button(self):
+        self.backup_button = QPushButton("Сохранить БД", self.tab_2)
+        self.backup_button.setGeometry(QtCore.QRect(960, 430, 120, 25))
+        self.backup_button.setStyleSheet("""
+            QPushButton {
+                background-color: #b0c4de;
+                border-radius: 7%;
+                border: 1px solid grey;
+                font-family: Avenir Next;
+                font-size: 15px;
+            }
+            QPushButton:hover {
+                background-color: #9db1cc;
+            }
+        """)
+        self.backup_button.clicked.connect(self.create_database_backup)
+
+    def create_database_backup(self):
+        try:
+            current_date = QDate.currentDate().toString('yyyy-MM-dd')
+            
+            file_name = f"hand_combat_backup_{current_date}.sql"
+            save_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Сохранить резервную копию",
+                file_name,
+                "MySQL Backup (*.sql)"
+            )
+            
+            if save_path:
+                command = f"mysqldump -u {self.db_manager.user} -p{self.db_manager.password} {self.db_manager.db_name} > {save_path}"
+                
+                result = os.system(command)
+                
+                if result == 0:
+                    QMessageBox.information(
+                        self,
+                        "Успех",
+                        f"Резервная копия успешно создана:\n{save_path}"
+                    )
+                else:
+                    raise Exception("Ошибка при создании резервной копии")
+                    
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось создать резервную копию: {str(e)}"
+            )
 
     def confirm_exit(self):
         logout_dialog = QDialog(self)
