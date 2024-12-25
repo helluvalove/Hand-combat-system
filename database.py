@@ -58,3 +58,17 @@ class DatabaseManager:
     
     def decrypt(self, encrypted_data):
         return self.crypto.decrypt(encrypted_data).decode()
+    
+    def execute_transaction(self, queries, params_list):
+        connection = self.connect_to_db()
+        try:
+            with connection.cursor() as cursor:
+                connection.begin()
+                for query, params in zip(queries, params_list):
+                    cursor.execute(query, params)
+                connection.commit()
+        except Exception as e:
+            connection.rollback()
+            raise e
+        finally:
+            connection.close()
